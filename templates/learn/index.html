@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Learn · {{ site_name }}{% endblock %}
+{% block meta_description %}Educational lessons on technical analysis, moving averages, RSI, MACD, position sizing, FIFO accounting, and trade discipline on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="tb-context mb-1">Education · Trading Curriculum</div>
+    <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+        <h1 class="h3 m-0">Lessons</h1>
+        <div class="tb-context">
+            {{ lessons|length }} lessons · Educational content, not financial advice
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="tb-panel p-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="tb-metric-label">Your Learning Progress</div>
+            <div class="h5 m-0 mt-1">
+                <span class="tb-num">{{ completed_slugs|length }}</span> of <span class="tb-num">{{ lessons|length }}</span> lessons completed
+            </div>
+        </div>
+        <div class="flex-grow-1 mx-md-4" style="max-width: 320px; min-width: 160px;">
+            {% set pct = ((completed_slugs|length / lessons|length) * 100)|round|int if lessons|length else 0 %}
+            <div class="progress" style="height: 10px; background-color: var(--tb-divider);">
+                <div class="progress-bar" role="progressbar" style="width: {{ pct }}%; background-color: var(--tb-pos);" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-1 tb-context">
+                <span>{{ pct }}% complete</span>
+                {% if completed_slugs|length == lessons|length %}
+                <span class="tb-pos fw-semibold"><i class="bi bi-trophy me-1" aria-hidden="true"></i>Curriculum finished!</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="tb-banner mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+        <i class="bi bi-journal-bookmark me-1" aria-hidden="true"></i>
+        <span><strong>Free educational curriculum.</strong> All lessons are open to read.</span>
+    </div>
+    <a href="{{ url_for('login') }}" class="text-decoration-none fw-semibold">Log in to track progress</a>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    {% for lesson in lessons %}
+    {% set is_done = lesson.slug in completed_slugs %}
+    <div class="col-12 col-md-6">
+        <div class="tb-panel h-100 d-flex flex-column">
+            <div class="tb-panel-head">
+                <span class="tb-chip py-0 px-2">Lesson {{ lesson.order }}</span>
+                {% if is_done %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Completed
+                </span>
+                {% else %}
+                <span class="tb-context"><i class="bi bi-clock me-1" aria-hidden="true"></i>{{ lesson.reading_time }} min read</span>
+                {% endif %}
+            </div>
+            <div class="tb-panel-body flex-grow-1 d-flex flex-column justify-content-between">
+                <div>
+                    <h2 class="h5 mb-2">
+                        <a href="{{ url_for('lesson_detail', slug=lesson.slug) }}" class="text-decoration-none">
+                            {{ lesson.title }}
+                        </a>
+                    </h2>
+                    <p class="tb-context mb-3" style="font-size: 14px; line-height: 1.5;">
+                        {{ lesson.summary }}
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top" style="border-color: var(--tb-divider) !important;">
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for filter_tag in lesson.related_filters %}
+                        <span class="tb-chip py-0 px-2" style="font-size: 11px;">Filter: {{ filter_tag }}</span>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('lesson_detail', slug=lesson.slug) }}" class="btn-tb-outline btn-sm text-decoration-none ms-auto" style="min-height: 36px; padding: 0 14px;">
+                        {% if is_done %}Review lesson{% else %}Read lesson{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

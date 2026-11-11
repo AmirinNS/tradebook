@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{% if action == 'edit' %}Edit Trade{% else %}Add Trade{% endif %} · {{ portfolio.name }} · {{ site_name }}{% endblock %}
+{% block meta_description %}{% if action == 'edit' %}Edit a recorded trade{% else %}Record a new trade{% endif %} in {{ portfolio.name }} on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="mb-3">
+            <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio._id) }}" class="tb-context text-decoration-none">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to {{ portfolio.name }}
+            </a>
+            <h1 class="h3 mt-2 mb-1">{% if action == 'edit' %}Edit trade{% else %}Add trade{% endif %}</h1>
+            <div class="tb-context">{{ portfolio.currency }} portfolio · FIFO position tracking</div>
+        </div>
+
+        <div class="tb-panel tb-panel-body">
+            <form method="post" id="tradeForm" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="version" value="{{ portfolio.version }}">
+
+                <div class="mb-3">
+                    <label for="symbol" class="form-label tb-metric-label">Ticker symbol</label>
+                    <input type="text" class="form-control text-uppercase" id="symbol" name="symbol" value="{{ trade.symbol if trade else '' }}" required maxlength="32" placeholder="e.g. DEMO1, 1155.KL, AAPL" {% if action != 'edit' %}autofocus{% endif %}>
+                    <div class="form-text tb-context">Must match the portfolio currency ({{ portfolio.currency }}). Free text ticker allowed.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label tb-metric-label d-block">Side</label>
+                    <div class="btn-group w-100" role="group" aria-label="Trade side">
+                        <input type="radio" class="btn-check" name="side" id="sideBuy" value="buy" {% if not trade or trade.side == 'buy' %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary" for="sideBuy" style="border-radius: var(--tb-radius-ctl) 0 0 var(--tb-radius-ctl);">Buy</label>
+
+                        <input type="radio" class="btn-check" name="side" id="sideSell" value="sell" {% if trade and trade.side == 'sell' %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary" for="sideSell" style="border-radius: 0 var(--tb-radius-ctl) var(--tb-radius-ctl) 0;">Sell</label>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label for="qty" class="form-label tb-metric-label">Shares (quantity)</label>
+                        <input type="number" class="form-control tb-num" id="qty" name="qty" value="{{ trade.qty if trade else '' }}" min="1" step="1" required placeholder="e.g. 100">
+                    </div>
+                    <div class="col-6">
+                        <label for="price" class="form-label tb-metric-label">Price per share</label>
+                        <input type="text" inputmode="decimal" class="form-control tb-num" id="price" name="price" value="{{ trade.price if trade else '' }}" required placeholder="e.g. 10.5000">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="fees" class="form-label tb-metric-label m-0">Actual fees ({{ portfolio.currency }})</label>
+                        <button type="button" class="btn btn-link tb-context p-0 text-decoration-none" id="calcFeesBtn">
+                            <i class="bi bi-calculator me-1" aria-hidden="true"></i> Estimate fees
+                        </button>
+                    </div>
+                    <input type="text" inputmode="decimal" class="form-control tb-num" id="fees" name="fees" value="{{ trade.fees if trade else '0.00' }}" required placeholder="0.00">
+                    <div id="feesHint" class="form-text tb-context mt-1">Actual fees paid. Prefilled with estimated fees; stored fees are authoritative.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="date" class="form-label tb-metric-label">Trade date</label>
+                    <input type="date" class="form-control tb-date" id="date" name="date" value="{{ trade.date if trade else '' }}" required>
+                    <div class="form-text tb-context">Exchange-local trading day (stored as UTC midnight).</div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="submit" class="btn-tb">
+                        {% if action == 'edit' %}Save changes{% else %}Record trade{% endif %}
+                    </button>
+                    <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio._id) }}" class="btn-tb-outline text-decoration-none">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const symbolInput = document.getElementById("symbol");
+    const qtyInput = document.getElementById("qty");
+    const priceInput = document.getElementById("price");
+    const feesInput = document.getElementById("fees");
+    const feesHint = document.getElementById("feesHint");
+    const calcFeesBtn = document.getElementById("calcFeesBtn");
+    const dateInput = document.getElementById("date");
+    const isEdit = {{ 'true' if action == 'edit' else 'false' }};
+    let userEditedFees = isEdit;
+
+    // Default date to today for new trades if empty
+    if (!dateInput.value) {
+        const today = new Date().toISOString().split("T")[0];
+        dateInput.value = today;
+    }
+
+    feesInput.addEventListener("input", function() {
+        userEditedFees = true;
+    });
+
+    function getSelectedSide() {
+        const checked = document.querySelector('input[name="side"]:checked');
+        return checked ? checked.value : "buy";
+    }
+
+    async function fetchFeeEstimate(forcePrefill) {
+        const sym = symbolInput.value.trim().toUpperCase();
+        const side = getSelectedSide();
+        const qty = parseInt(qtyInput.value, 10);
+        const p = parseFloat(priceInput.value);
+
+        if (!sym || !qty || qty <= 0 || !p || p <= 0) {
+            return;
+        }
+
+        try {
+            const url = `/api/fees?symbol=${encodeURIComponent(sym)}&side=${encodeURIComponent(side)}&qty=${qty}&price=${encodeURIComponent(priceInput.value.trim())}&currency={{ portfolio.currency }}`;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.fees) {
+                if (forcePrefill || !userEditedFees) {
+                    feesInput.value = data.fees;
+                }
+                if (data.breakdown && data.currency === "MYR") {
+                    feesHint.textContent = `Estimated total: RM ${data.fees} (Brokerage: RM ${data.breakdown.brokerage}, Clearing: RM ${data.breakdown.clearing}, Stamp duty: RM ${data.breakdown.stamp_duty})`;
+                } else {
+                    feesHint.textContent = `Estimated total: ${data.currency} ${data.fees}`;
+                }
+            }
+        } catch (err) {
+            console.error("Fee estimation error", err);
+        }
+    }
+
+    [symbolInput, qtyInput, priceInput].forEach(el => {
+        el.addEventListener("blur", () => fetchFeeEstimate(false));
+    });
+
+    document.querySelectorAll('input[name="side"]').forEach(el => {
+        el.addEventListener("change", () => fetchFeeEstimate(false));
+    });
+
+    calcFeesBtn.addEventListener("click", () => fetchFeeEstimate(true));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+# Version control and orchestration state
+.git/
+.orchestrate/
+
+# Local virtual environment: host architecture, the image builds its own with uv sync.
+.venv/
+
+# Python bytecode and test/lint caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local environment
+.env
+
+# OS / editor noise
+.DS_Store
+*.log

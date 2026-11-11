@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Journals · {{ site_name }}{% endblock %}
+{% block meta_description %}Manage your trading portfolios, recorded trades, and journal performance on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div>
+        <div class="tb-context mb-1">Trading journal · Overview</div>
+        <h1 class="h3 m-0">Portfolios</h1>
+    </div>
+    <div>
+        <a href="{{ url_for('portfolio_create') }}" class="btn-tb text-decoration-none">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New portfolio
+        </a>
+    </div>
+</div>
+
+{% if portfolios %}
+<div class="tb-panel">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Your trading journals</h2>
+        <span class="tb-context">{{ portfolios|length }} portfolio{{ 's' if portfolios|length != 1 else '' }}</span>
+    </div>
+    <div class="tb-scroll" role="region" aria-label="Portfolios table" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Currency</th>
+                    <th>Created</th>
+                    <th class="r">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in portfolios %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('portfolio_detail', portfolio_id=p._id) }}" class="fw-semibold text-decoration-none">
+                            {{ p.name }}
+                        </a>
+                    </td>
+                    <td><span class="tb-chip py-0 px-2">{{ p.currency }}</span></td>
+                    <td><span class="tb-date tb-muted">{{ p.created_at.strftime('%d %b %Y') if p.created_at else '—' }}</span></td>
+                    <td class="r">
+                        <a href="{{ url_for('portfolio_detail', portfolio_id=p._id) }}" class="btn-tb-outline btn-sm text-decoration-none" style="min-height:32px; padding:0 12px;">
+                            Open journal <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="tb-panel tb-panel-body text-center py-5">
+    <i class="bi bi-journal-text fs-1 tb-muted" aria-hidden="true"></i>
+    <h2 class="h5 mt-3">No portfolios yet</h2>
+    <p class="tb-muted mb-4" style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        Create your first trading journal to record buy and sell trades, calculate FIFO positions, and track realized P/L.
+    </p>
+    <a href="{{ url_for('portfolio_create') }}" class="btn-tb text-decoration-none">
+        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Create first portfolio
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,479 @@
+/* ==========================================================================
+   tradebook: Direction A, Exchange ledger Theme
+   ========================================================================== */
+
+/* ---------- Design Tokens ---------- */
+:root, [data-bs-theme="light"] {
+    --tb-canvas: #F3F5F7;
+    --tb-surface: #FFFFFF;
+    --tb-text: #17212B;
+    --tb-muted: #526171;
+    --tb-accent: #174EA6;
+    --tb-on-accent: #FFFFFF;
+    --tb-pos: #006B54;
+    --tb-neg: #B13A26;
+    --tb-border: #7A8796;
+    --tb-divider: #DDE3E9;
+
+    --tb-font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --tb-font-num: "IBM Plex Mono", ui-monospace, monospace;
+    --tb-font-head: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+
+    --tb-radius-ctl: 4px;
+    --tb-radius-panel: 8px;
+    --tb-row: 40px;
+    --tb-pad: 16px;
+    --tb-gap: 24px;
+    --tb-shadow: none;
+
+    /* Bootstrap 5 Theme Variable Mappings */
+    --bs-body-bg: var(--tb-canvas);
+    --bs-body-color: var(--tb-text);
+    --bs-secondary-color: var(--tb-muted);
+    --bs-border-color: var(--tb-divider);
+    --bs-link-color: var(--tb-accent);
+    --bs-link-hover-color: var(--tb-accent);
+    --bs-body-font-family: var(--tb-font-ui);
+    --bs-emphasis-color: var(--tb-text);
+    --bs-card-bg: var(--tb-surface);
+    --bs-card-border-color: var(--tb-divider);
+    --bs-card-border-radius: var(--tb-radius-panel);
+}
+
+[data-bs-theme="dark"] {
+    --tb-canvas: #10171F;
+    --tb-surface: #18232E;
+    --tb-text: #EDF3F8;
+    --tb-muted: #A9BACB;
+    --tb-accent: #9FC1FF;
+    --tb-on-accent: #18232E;
+    --tb-pos: #67DFC0;
+    --tb-neg: #FFA184;
+    --tb-border: #728397;
+    --tb-divider: #26323E;
+
+    --bs-body-bg: var(--tb-canvas);
+    --bs-body-color: var(--tb-text);
+    --bs-secondary-color: var(--tb-muted);
+    --bs-border-color: var(--tb-divider);
+    --bs-link-color: var(--tb-accent);
+    --bs-link-hover-color: var(--tb-accent);
+    --bs-body-font-family: var(--tb-font-ui);
+    --bs-emphasis-color: var(--tb-text);
+    --bs-card-bg: var(--tb-surface);
+    --bs-card-border-color: var(--tb-divider);
+    --bs-card-border-radius: var(--tb-radius-panel);
+}
+
+/* ---------- Global Elements ---------- */
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background-color: var(--tb-canvas);
+    color: var(--tb-text);
+    font-family: var(--tb-font-ui);
+    margin: 0;
+    line-height: 1.5;
+    max-width: 100%;
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+main {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6, .tb-head {
+    font-family: var(--tb-font-head);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.tb-num {
+    font-family: var(--tb-font-num);
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+.tb-date {
+    font-family: var(--tb-font-ui);
+    font-variant-numeric: tabular-nums;
+}
+
+.tb-pos {
+    color: var(--tb-pos) !important;
+}
+
+.tb-neg {
+    color: var(--tb-neg) !important;
+}
+
+.tb-muted {
+    color: var(--tb-muted) !important;
+}
+
+a {
+    color: var(--tb-accent);
+    text-underline-offset: 2px;
+}
+
+a:hover {
+    color: var(--tb-accent);
+    text-decoration: underline;
+}
+
+/* ---------- Skip Link ---------- */
+.tb-skip {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.tb-skip:focus {
+    position: fixed;
+    left: 16px;
+    top: 12px;
+    width: auto;
+    height: auto;
+    z-index: 1050;
+    background: var(--tb-surface);
+    color: var(--tb-accent);
+    padding: 8px 16px;
+    border: 2px solid var(--tb-accent);
+    border-radius: var(--tb-radius-ctl);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Navigation ---------- */
+.tb-nav {
+    background: var(--tb-surface);
+    border-bottom: 1px solid var(--tb-divider);
+    min-height: 56px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.tb-brand {
+    font-family: var(--tb-font-head);
+    font-weight: 700;
+    color: var(--tb-text);
+    text-decoration: none;
+    font-size: 1.15rem;
+}
+
+.tb-brand:hover {
+    color: var(--tb-text);
+    text-decoration: none;
+}
+
+.tb-nav .nav-link {
+    color: var(--tb-muted);
+    font-weight: 500;
+    padding: 16px 12px;
+    border-bottom: 2px solid transparent;
+}
+
+.tb-nav .nav-link:hover {
+    color: var(--tb-text);
+}
+
+.tb-nav .nav-link.active {
+    color: var(--tb-text);
+    font-weight: 600;
+    border-bottom-color: var(--tb-accent);
+}
+
+/* ---------- Panels and Cards ---------- */
+.tb-panel {
+    background: var(--tb-surface);
+    border: 1px solid var(--tb-divider);
+    border-radius: var(--tb-radius-panel);
+    box-shadow: var(--tb-shadow);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.tb-panel-head {
+    padding: 12px var(--tb-pad);
+    border-bottom: 1px solid var(--tb-divider);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.tb-panel-body {
+    padding: var(--tb-pad);
+    min-width: 0;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+/* ---------- Buttons & Controls ---------- */
+.btn-tb {
+    background: var(--tb-accent);
+    color: var(--tb-on-accent);
+    border: 1px solid var(--tb-accent);
+    border-radius: var(--tb-radius-ctl);
+    min-height: 44px;
+    font-weight: 600;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-tb:hover {
+    color: var(--tb-on-accent);
+    text-decoration: underline;
+    opacity: 0.95;
+}
+
+.btn-tb-outline {
+    background: transparent;
+    color: var(--tb-accent);
+    border: 1px solid var(--tb-border);
+    border-radius: var(--tb-radius-ctl);
+    min-height: 44px;
+    font-weight: 600;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-tb-outline:hover {
+    background: color-mix(in srgb, var(--tb-accent) 8%, transparent);
+    color: var(--tb-accent);
+    text-decoration: none;
+}
+
+.btn-tb:focus-visible,
+.btn-tb-outline:focus-visible,
+.nav-link:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--tb-accent);
+    outline-offset: 2px;
+    box-shadow: none !important;
+}
+
+/* ---------- Tables ---------- */
+.tb-table {
+    width: 100%;
+    margin: 0;
+    font-size: 14px;
+    border-collapse: collapse;
+}
+
+.tb-table th {
+    color: var(--tb-muted);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px var(--tb-pad);
+    border-bottom: 1px solid var(--tb-divider);
+    white-space: nowrap;
+}
+
+.tb-table td {
+    height: var(--tb-row);
+    padding: 0 var(--tb-pad);
+    border-bottom: 1px solid var(--tb-divider);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.tb-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.tb-table tbody tr:hover {
+    background: color-mix(in srgb, var(--tb-accent) 4%, var(--tb-surface));
+}
+
+.tb-table .r {
+    text-align: right;
+}
+
+/* ---------- Typography and Metrics ---------- */
+.tb-metric-label {
+    font-size: 13px;
+    color: var(--tb-muted);
+    font-weight: 500;
+}
+
+.tb-metric-big {
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 600;
+}
+
+.tb-metric {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.tb-context {
+    font-size: 13px;
+    color: var(--tb-muted);
+}
+
+.tb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--tb-border);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--tb-muted);
+}
+
+.tb-banner {
+    background: color-mix(in srgb, var(--tb-accent) 10%, var(--tb-surface));
+    border: 1px solid color-mix(in srgb, var(--tb-accent) 35%, transparent);
+    border-radius: var(--tb-radius-panel);
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.tb-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: block;
+    contain: paint;
+}
+
+/* ---------- Skeleton / Loading States ---------- */
+.tb-skeleton {
+    background: linear-gradient(90deg, var(--tb-divider) 25%, color-mix(in srgb, var(--tb-divider) 50%, transparent) 50%, var(--tb-divider) 75%);
+    background-size: 200% 100%;
+    animation: tb-skeleton-loading 1.5s infinite;
+    border-radius: var(--tb-radius-ctl);
+}
+
+@keyframes tb-skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ---------- Responsive Adjustments ---------- */
+@media (max-width: 576px) {
+    .tb-metric-big {
+        font-size: 26px;
+    }
+
+    .tb-panel-head {
+        padding: 10px 12px;
+    }
+
+    .tb-panel-body {
+        padding: 12px;
+    }
+}
+
+/* ---------- Lesson / Prose Typography (Phase F) ---------- */
+.tb-prose {
+    font-size: 16px;
+    line-height: 1.65;
+    max-width: 70ch;
+    color: var(--tb-text);
+}
+
+.tb-prose h2 {
+    font-size: 22px;
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--tb-text);
+}
+
+.tb-prose h3 {
+    font-size: 18px;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--tb-text);
+}
+
+.tb-prose p {
+    margin-bottom: 1rem;
+}
+
+.tb-prose ul, .tb-prose ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.tb-prose li {
+    margin-bottom: 0.35rem;
+}
+
+.tb-prose hr {
+    border-color: var(--tb-divider);
+    margin: 1.75rem 0;
+    opacity: 1;
+}
+
+.tb-prose pre {
+    background: var(--tb-canvas);
+    border: 1px solid var(--tb-divider);
+    border-radius: var(--tb-radius-ctl);
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-family: var(--tb-font-num);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.tb-prose code {
+    font-family: var(--tb-font-num);
+    font-size: 0.9em;
+    background: color-mix(in srgb, var(--tb-muted) 15%, transparent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--tb-text);
+}
+
+.tb-prose pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.tb-prose table {
+    width: 100%;
+    margin: 1rem 0 1.5rem;
+    font-size: 14px;
+    border-collapse: collapse;
+}
+
+.tb-prose th, .tb-prose td {
+    padding: 8px 12px;
+    border: 1px solid var(--tb-divider);
+}
+
+.tb-prose th {
+    background: var(--tb-canvas);
+    font-weight: 600;
+    color: var(--tb-muted);
+}
+

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Stocks · {{ site_name }}{% endblock %}
+{% block meta_description %}Browse universe stock prices, daily changes, and technical charts on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="tb-context mb-1">Market data · Universe</div>
+    <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+        <h1 class="h3 m-0">Stocks</h1>
+        <span class="tb-context">{{ stocks|length }} symbols tracked</span>
+    </div>
+</div>
+
+<div class="tb-panel">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Universe listing</h2>
+        <span class="tb-context">Split/dividend-adjusted daily bars</span>
+    </div>
+    <div class="tb-scroll" role="region" aria-label="Stock universe" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Sector</th>
+                    <th>Exchange</th>
+                    <th>Currency</th>
+                    <th class="r">Last close</th>
+                    <th class="r">Day change</th>
+                    <th class="r">Price date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('stock_detail', symbol=stock.symbol) }}" class="fw-semibold text-decoration-none">
+                            {{ stock.symbol }}
+                        </a>
+                    </td>
+                    <td>{{ stock.name }}</td>
+                    <td><span class="tb-muted">{{ stock.sector }}</span></td>
+                    <td><span class="tb-chip py-0 px-2">{{ stock.exchange }}</span></td>
+                    <td><span class="tb-context">{{ stock.currency }}</span></td>
+                    <td class="r">
+                        {% if stock.has_data %}
+                        <span class="tb-num">{{ stock.last_close }}</span>
+                        {% else %}
+                        <span class="tb-muted">No price</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if stock.has_data %}
+                            {% if stock.is_pos %}
+                            <span class="tb-num tb-pos">
+                                <span aria-hidden="true">▲</span> +{{ stock.change }} ({{ stock.change_pct }})
+                                <span class="visually-hidden">gain</span>
+                            </span>
+                            {% elif stock.is_neg %}
+                            <span class="tb-num tb-neg">
+                                <span aria-hidden="true">▼</span> {{ stock.change }} ({{ stock.change_pct }})
+                                <span class="visually-hidden">loss</span>
+                            </span>
+                            {% else %}
+                            <span class="tb-num tb-muted">0.0000 (+0.00%)</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        <span class="tb-date tb-muted">{{ stock.last_date or '—' }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Import trades · {{ portfolio.name }} · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio._id) }}">{{ portfolio.name }}</a>
+    <h1 class="h3 mt-2">Import trades</h1>
+    <p class="tb-context">{{ portfolio.currency }} portfolio · Trade dates come from your file · Preview expires after one hour</p>
+</div>
+<div class="tb-panel tb-panel-body mb-4">
+    <p>Use UTF-8 CSV with columns <code>date,symbol,side,qty,price,fees</code>. Dates use YYYY-MM-DD. Maximum 1 MB and 5,000 trades. Fees are the actual fees paid.</p>
+    <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="csv-file" class="form-label">Trades CSV</label>
+        <input type="file" id="csv-file" name="file" accept=".csv,text/csv" class="form-control mb-3" required aria-describedby="upload-errors">
+        <button class="btn-tb" type="submit">Preview import</button>
+    </form>
+</div>
+<div class="tb-panel tb-panel-body mb-4">
+    <h2 class="h6">Import contract note (synthetic format)</h2>
+    <p id="pdf-help">Synthetic demo data only. This is a demo layout designed for this project, not a real broker format. One MYR trade per PDF. Maximum 5 MB, 10 pages and 200 KB of extracted text. Encrypted and image-only PDFs are not supported.</p>
+    <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="format" value="pdf">
+        <label for="pdf-file" class="form-label">Synthetic contract note PDF</label>
+        <input type="file" id="pdf-file" name="file" accept=".pdf,application/pdf" class="form-control mb-3" required aria-describedby="pdf-help upload-errors">
+        <button class="btn-tb" type="submit">Preview contract note</button>
+    </form>
+</div>
+<div id="upload-errors">
+{% if errors %}
+    <div class="tb-panel tb-panel-body mb-4" role="alert">
+        <h2 class="h6">Correct these errors and upload again</h2>
+        <ul class="mb-0">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        <p class="mb-0 mt-2">No trades have been imported.</p>
+    </div>
+{% endif %}
+</div>
+{% if rows %}
+<div class="tb-panel mb-4">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0">Preview trades</h2>
+        <span class="tb-context">{{ rows|length }} parsed trades · {{ portfolio.currency }}</span>
+    </div>
+    <div class="tb-scroll" role="region" aria-label="Import preview table" tabindex="0">
+        <table class="tb-table">
+            <thead><tr><th>Date</th><th>Symbol</th><th>Side</th><th class="r">Shares</th><th class="r">Price</th><th class="r">Fees</th></tr></thead>
+            <tbody>{% for row in rows %}
+                <tr><td>{{ row.date.strftime('%Y-%m-%d') }}</td><td>{{ row.symbol }}</td><td>{{ row.side }}</td><td class="r tb-num">{{ row.qty|fmt_int }}</td><td class="r tb-num">{{ row.price|fmt_price }}</td><td class="r tb-num">{{ row.fees|fmt_money }}</td></tr>
+            {% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% if preview_id %}
+<form method="post" action="{{ url_for('import_confirm', preview_id=preview_id) }}" onsubmit="const button = this.querySelector('button'); button.disabled = true; button.textContent = 'Confirming…';">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if note %}
+    <div class="tb-panel tb-panel-body mb-3">
+        <h2 class="h6">Synthetic contract note · {{ note.contract_number }}</h2>
+        <p>{{ note.stock_name }} · Settlement {{ note.settlement_date.strftime('%Y-%m-%d') }} · MYR</p>
+        <p class="mb-0">Gross RM {{ note.gross|fmt_money }} · Fees RM {{ note.fees|fmt_money }} · Expected net RM {{ note.expected_net|fmt_money }} · Stated net RM {{ note.net|fmt_money }}</p>
+        {% if note.requires_acknowledgement %}
+        <p id="reconciliation-warning" class="mt-3" role="alert">Reconciliation mismatch. The stated net differs from gross plus buy fees or minus sell fees by more than RM0.01. Review the amounts before confirming.</p>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="acknowledge-mismatch" name="acknowledge_mismatch" required aria-describedby="reconciliation-warning">
+            <label class="form-check-label" for="acknowledge-mismatch">I acknowledge the reconciliation mismatch and want to import the trade with the displayed price and fees.</label>
+        </div>
+        {% else %}
+        <p class="tb-context mt-2 mb-0">Net amount reconciles within RM0.01.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    <p class="tb-context">Review every row. Confirmation checks your current trade history before saving.</p>
+    <button type="submit" class="btn-tb">Confirm import</button>
+</form>
+{% endif %}
+{% endblock %}

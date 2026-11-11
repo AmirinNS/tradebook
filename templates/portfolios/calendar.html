@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}P/L calendar · {{ portfolio.name }} · {{ site_name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+    {% if read_only %}
+    <div class="tb-banner mb-3 d-flex flex-wrap gap-2 align-items-center">
+        <i class="bi bi-eye" aria-hidden="true"></i>
+        <span><strong>Read-only demo.</strong> Synthetic demo data. Nothing here is a real account.</span>
+        {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('register') }}" class="ms-auto text-decoration-none">Create your own journal</a>
+        {% endif %}
+    </div>
+    <div class="tb-context mb-1">
+        <a href="{{ url_for('demo') }}" class="tb-context text-decoration-none">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> {{ portfolio.name }}
+        </a>
+    </div>
+    {% else %}
+    <div class="tb-context mb-1">
+        <a href="{{ url_for('portfolio_detail', portfolio_id=portfolio._id) }}" class="tb-context text-decoration-none">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> {{ portfolio.name }}
+        </a>
+    </div>
+    {% endif %}
+    <h1 class="h3 mt-2">P/L calendar</h1>
+    <p class="tb-context">{{ portfolio.currency }} portfolio · {{ month_label }} · Realized P/L by trade exit date, after recorded fees</p>
+</div>
+<form method="get" action="{{ url_for('demo_calendar') if read_only else url_for('portfolio_calendar', portfolio_id=portfolio._id) }}" class="d-flex flex-wrap align-items-end gap-3 mb-4">
+    <div><label for="calendar-year" class="form-label">Year</label><input id="calendar-year" name="year" type="number" class="form-control" value="{{ year }}" min="1" max="9999" required></div>
+    <div><label for="calendar-month" class="form-label">Month</label><input id="calendar-month" name="month" type="number" class="form-control" value="{{ month }}" min="1" max="12" required></div>
+    <button type="submit" class="btn-tb-outline">Show month</button>
+</form>
+<div class="tb-panel">
+    <div class="tb-panel-head"><h2 class="h6 m-0">{{ month_label }}</h2><span class="tb-context">{{ portfolio.currency }}</span></div>
+    <div class="tb-scroll" role="region" aria-label="Monthly realized P/L calendar" tabindex="0">
+        <table class="tb-table" style="min-width: 840px; table-layout: fixed;">
+            <thead><tr>{% for label in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+            <tbody>{% for week in weeks %}<tr>
+                {% for day in week %}<td class="align-top" style="height: 88px;">
+                    <time datetime="{{ day.isoformat() }}" class="{% if day.month != month %}tb-muted{% endif %}">{{ day.day }}</time>
+                    {% if day.month == month %}
+                        {% set value = totals.get(day) %}
+                        <div class="tb-num mt-2 {% if value is not none and value > 0 %}tb-pos{% elif value is not none and value < 0 %}tb-neg{% endif %}">
+                            {% if value is none %}<span class="tb-context">No exits</span>
+                            {% elif value > 0 %}<span aria-hidden="true">▲</span> +{{ value|fmt_money }}<span class="visually-hidden"> gain</span>
+                            {% elif value < 0 %}<span aria-hidden="true">▼</span> {{ value|fmt_money }}<span class="visually-hidden"> loss</span>
+                            {% else %}0.00<span class="visually-hidden"> break-even</span>{% endif %}
+                        </div>
+                    {% endif %}
+                </td>{% endfor %}
+            </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

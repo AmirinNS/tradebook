@@ -1,0 +1,59 @@
+# tradebook
+
+Trading journal, stock screener, indicator lessons and a stock-market tycoon game. Flask + MongoDB showcase.
+
+## Stack
+
+- Flask (Python) — thin routes, functional service layer
+- MongoDB via PyMongo (no ORM)
+- Bootstrap 5 (CDN) + Jinja2 templates + vanilla JS
+
+## Setup
+
+```bash
+# 1. Install dependencies
+uv sync
+
+# 2. Configure environment
+cp .env.example .env   # then edit APP_ENV / MONGO_URI / DB_NAME / SECRET_KEY
+
+# 3. Run
+uv run python tradebook.py
+# http://localhost:5000
+```
+
+## Run modes
+
+Set `APP_ENV` in `.env` (or inline). One entrypoint, mode-aware:
+
+| `APP_ENV` | Server | Debug |
+|-----------|--------|-------|
+| `development` (default) | native Flask | on |
+| `testing` | native Flask | on |
+| `production` | waitress (WSGI) | off |
+
+```bash
+# development (default)
+uv run python tradebook.py
+
+# testing
+APP_ENV=testing uv run python tradebook.py
+
+# production — served by waitress, debug off
+APP_ENV=production uv run python tradebook.py
+```
+
+The native Flask server is for development/testing only; production is served by waitress. The app and MongoDB are assumed co-located (same host); set `MONGO_URI` per environment in `.env` (testing may point at a remote/shared DB).
+
+## Layout
+
+- `tradebook.py` — Flask entrypoint (routes only)
+- `modules/` — business logic (pure functions, direct PyMongo)
+- `sources/` — config and shared helpers (`config.py`, `functions.py`, `seo.py`)
+- `templates/` — Jinja2 templates (`base.html` + `_navbar.html` / `_footer.html` partials)
+- `static/` — CSS / JS / images
+- `plans/` — feature plans (kebab-case markdown)
+
+## SEO
+
+Baseline SEO is built in: `base.html` sets meta description, Open Graph, Twitter card, and canonical tags. Override per page with `{% block title %}` and `{% block meta_description %}`. Site-wide defaults come from `SITE_NAME` / `SITE_URL` in `.env` and `META_*` in `sources/seo.py`. Drop an OG image at `static/img/og-default.png`. `/robots.txt` and `/sitemap.xml` are served by the app (the sitemap is a minimal static list — extend it as pages grow).

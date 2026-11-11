@@ -1,0 +1,41 @@
+[project]
+name = "tradebook"
+version = "0.1.0"
+description = "Trading journal, stock screener, indicator lessons and a stock-market tycoon game."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "Flask>=3.0.0",
+    "Flask-Limiter>=3.5",
+    "Flask-Login>=0.6",
+    "Flask-WTF>=1.2",
+    "markdown>=3.11.3",
+    "pdfplumber>=0.11.10",
+    "pymongo>=4.6.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.3",
+    "waitress>=3.0.0",
+    "yfinance>=1.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "reportlab>=5.1.0",
+    "ruff>=0.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+cache-dir = ".venv/.ruff_cache"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

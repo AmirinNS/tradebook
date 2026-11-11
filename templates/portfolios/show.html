@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}{{ portfolio.name }} · Journal · {{ site_name }}{% endblock %}
+{% block meta_description %}{{ portfolio.name }} trading journal on {{ site_name }}. Realized and unrealized P/L, open FIFO positions, and closed trades.{% endblock %}
+
+{% block content %}
+{% if read_only %}
+<div class="tb-banner mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <i class="bi bi-eye" aria-hidden="true"></i>
+    <span><strong>Read-only demo.</strong> Synthetic demo data. Nothing here is a real account.</span>
+    {% if not current_user.is_authenticated %}
+    <a href="{{ url_for('register') }}" class="ms-auto text-decoration-none">Create your own journal</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
+    <div>
+        <div class="tb-context mb-1">
+            {% if read_only %}
+            Demo / {{ portfolio.name }}
+            {% else %}
+            <a href="{{ url_for('portfolios_list') }}" class="tb-context text-decoration-none">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Portfolios
+            </a>
+            / {{ portfolio.name }}
+            {% endif %}
+        </div>
+        <h1 class="h3 m-0">{{ portfolio.name }}</h1>
+        <div class="tb-context mt-1">
+            {{ portfolio.currency }} portfolio · Daily prices as of {{ as_of_date }} · All recorded trades
+        </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        {% if read_only %}
+        <a href="{{ url_for('demo_calendar') }}" class="btn-tb-outline text-decoration-none">P/L calendar</a>
+        <span class="tb-context"><i class="bi bi-lock me-1" aria-hidden="true"></i>Read-only. <a href="{{ url_for('register') }}" class="text-decoration-none">Create an account</a> to add or import trades.</span>
+        {% else %}
+        <a href="{{ url_for('portfolio_calendar', portfolio_id=portfolio._id) }}" class="btn-tb-outline text-decoration-none">P/L calendar</a>
+        <a href="{{ url_for('portfolio_import', portfolio_id=portfolio._id) }}" class="btn-tb-outline text-decoration-none">Import trades</a>
+        <a href="{{ url_for('trade_add', portfolio_id=portfolio._id) }}" class="btn-tb text-decoration-none">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add trade
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if has_price_error %}
+<div class="tb-panel p-3 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle tb-neg me-1" aria-hidden="true"></i>
+    <strong>Prices could not be loaded.</strong> Positions show <em>No price</em> until the next refresh. Your trades are unaffected.
+</div>
+{% endif %}
+
+{% if trades_display %}
+<!-- 4-Card Metric Strip -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="tb-panel tb-panel-body h-100">
+            <div class="tb-metric-label"><a href="{{ url_for('lesson_detail', slug='fifo-and-realized-pnl') }}" class="tb-metric-label text-decoration-none" title="Lesson: FIFO and Realized P/L">Realized P/L</a></div>
+            <div class="tb-metric-big tb-num {% if stats.total_pnl > 0 %}tb-pos{% elif stats.total_pnl < 0 %}tb-neg{% endif %}">
+                {% if stats.total_pnl > 0 %}
+                <span aria-hidden="true">▲</span> +{{ stats.total_pnl|fmt_money }}<span class="visually-hidden"> gain</span>
+                {% elif stats.total_pnl < 0 %}
+                <span aria-hidden="true">▼</span> {{ stats.total_pnl|fmt_money }}<span class="visually-hidden"> loss</span>
+                {% else %}
+                0.00
+                {% endif %}
+            </div>
+            <div class="tb-context">{{ portfolio.currency }}, after <a href="{{ url_for('lesson_detail', slug='bursa-trading-costs') }}" class="tb-context text-decoration-underline" title="Lesson: Trading Costs">recorded fees</a></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="tb-panel tb-panel-body h-100">
+            <div class="tb-metric-label">Unrealized P/L</div>
+            {% if unrealized_total is not none %}
+            <div class="tb-metric tb-num {% if unrealized_total > 0 %}tb-pos{% elif unrealized_total < 0 %}tb-neg{% endif %}">
+                {% if unrealized_total > 0 %}
+                <span aria-hidden="true">▲</span> +{{ unrealized_total|fmt_money }}<span class="visually-hidden"> gain</span>
+                {% elif unrealized_total < 0 %}
+                <span aria-hidden="true">▼</span> {{ unrealized_total|fmt_money }}<span class="visually-hidden"> loss</span>
+                {% else %}
+                0.00
+                {% endif %}
+            </div>
+            <div class="tb-context">At {{ as_of_date }} closes</div>
+            {% else %}
+            <div class="tb-metric tb-num tb-muted">No price</div>
+            <div class="tb-context">Prices unavailable</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="tb-panel tb-panel-body h-100">
+            <div class="tb-metric-label"><a href="{{ url_for('lesson_detail', slug='keeping-a-journal') }}" class="tb-metric-label text-decoration-none" title="Lesson: Trade Journaling">Win rate</a></div>
+            <div class="tb-metric tb-num">
+                {{ stats.win_rate|fmt_rate }}
+            </div>
+            <div class="tb-context">{{ wins_count|fmt_int }} of {{ total_portions|fmt_int }} closed lot portions</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="tb-panel tb-panel-body h-100">
+            <div class="tb-metric-label"><a href="{{ url_for('lesson_detail', slug='keeping-a-journal') }}" class="tb-metric-label text-decoration-none" title="Lesson: Trade Journaling">Profit factor</a></div>
+            <div class="tb-metric tb-num">
+                {% if stats.profit_factor is not none %}{{ stats.profit_factor|round(2) }}{% else %}N/A{% endif %}
+            </div>
+            <div class="tb-context">Gross wins / gross losses</div>
+        </div>
+    </div>
+</div>
+
+<!-- Open Positions Panel -->
+<div class="tb-panel mb-4">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Open positions</h2>
+        <span class="tb-context">{{ portfolio.currency }} · Cost/share includes allocated buy fees</span>
+    </div>
+    {% if open_positions %}
+    <div class="tb-scroll" role="region" aria-label="Open positions table" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th class="r">Shares</th>
+                    <th class="r">Cost/share</th>
+                    <th class="r">Last close</th>
+                    <th class="r">Unrealized</th>
+                    <th class="r">Price date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pos in open_positions %}
+                <tr>
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('stock_detail', symbol=pos.symbol) }}" class="text-decoration-none">
+                            {{ pos.symbol }}
+                        </a>
+                    </td>
+                    <td class="r tb-num">{{ pos.shares|fmt_int }}</td>
+                    <td class="r tb-num">{{ pos.cost_per_share|fmt_price }}</td>
+                    <td class="r">
+                        {% if pos.has_price %}
+                        <span class="tb-num">{{ pos.last_close|fmt_price }}</span>
+                        {% else %}
+                        <span class="tb-muted">No price</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if pos.has_price %}
+                            {% if pos.is_pos %}
+                            <span class="tb-num tb-pos">
+                                <span aria-hidden="true">▲</span> +{{ pos.unrealized|fmt_money }}
+                                <span class="visually-hidden">gain</span>
+                            </span>
+                            {% elif pos.is_neg %}
+                            <span class="tb-num tb-neg">
+                                <span aria-hidden="true">▼</span> {{ pos.unrealized|fmt_money }}
+                                <span class="visually-hidden">loss</span>
+                            </span>
+                            {% else %}
+                            <span class="tb-num">0.00</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="tb-muted">No price</span>
+                        {% endif %}
+                    </td>
+                    <td class="r tb-date tb-muted">
+                        {{ pos.price_date or 'No price' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="tb-panel-body py-4 text-center">
+        <p class="tb-muted m-0">No open positions. All lots have been closed.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Realized Lot Portions Panel -->
+<div class="tb-panel mb-4">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Realized lot portions</h2>
+        <span class="tb-context">FIFO closed portions · Net of buy &amp; sell fees</span>
+    </div>
+    {% if realized_items %}
+    <div class="tb-scroll" role="region" aria-label="Realized trades table" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Closed</th>
+                    <th class="r">Shares</th>
+                    <th class="r">Entry</th>
+                    <th class="r">Exit</th>
+                    <th class="r">Net P/L</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in realized_items %}
+                <tr>
+                    <td class="fw-semibold">{{ r.symbol }}</td>
+                    <td class="tb-date">{{ r.closed_date }}</td>
+                    <td class="r tb-num">{{ r.shares|fmt_int }}</td>
+                    <td class="r tb-num">{{ r.entry_price|fmt_price }}</td>
+                    <td class="r tb-num">{{ r.exit_price|fmt_price }}</td>
+                    <td class="r">
+                        {% if r.is_pos %}
+                        <span class="tb-num tb-pos">
+                            <span aria-hidden="true">▲</span> +{{ r.pnl|fmt_money }}
+                            <span class="visually-hidden">gain</span>
+                        </span>
+                        {% elif r.is_neg %}
+                        <span class="tb-num tb-neg">
+                            <span aria-hidden="true">▼</span> {{ r.pnl|fmt_money }}
+                            <span class="visually-hidden">loss</span>
+                        </span>
+                        {% else %}
+                        <span class="tb-num">0.00</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="tb-panel-body py-4 text-center">
+        <p class="tb-muted m-0">No closed positions yet. Sell trades will generate FIFO realized statistics.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Trade History Table -->
+<div class="tb-panel">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Recorded trades</h2>
+        <span class="tb-context">{{ trades_display|length }} trade{{ 's' if trades_display|length != 1 else '' }} recorded</span>
+    </div>
+    <div class="tb-scroll" role="region" aria-label="Recorded trades table" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th class="r">Shares</th>
+                    <th class="r">Price</th>
+                    <th class="r">Fees</th>
+                    {% if not read_only %}
+                    <th class="r">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in trades_display %}
+                <tr>
+                    <td class="tb-date">{{ t.display_date }}</td>
+                    <td class="fw-semibold">{{ t.symbol }}</td>
+                    <td>
+                        {% if t.side == 'buy' %}
+                        <span class="tb-chip py-0 px-2 tb-pos" style="border-color:var(--tb-pos);">BUY</span>
+                        {% else %}
+                        <span class="tb-chip py-0 px-2 tb-neg" style="border-color:var(--tb-neg);">SELL</span>
+                        {% endif %}
+                    </td>
+                    <td class="r tb-num">{{ t.qty|fmt_int }}</td>
+                    <td class="r tb-num">{{ t.price|fmt_price }}</td>
+                    <td class="r tb-num">{{ t.fees|fmt_money }}</td>
+                    {% if not read_only %}
+                    <td class="r">
+                        <div class="d-inline-flex align-items-center gap-2">
+                            <a href="{{ url_for('trade_edit', portfolio_id=portfolio._id, trade_id=t._id) }}" class="btn-tb-outline btn-sm text-decoration-none" style="min-height:28px; padding:0 8px; font-size:12px;">
+                                Edit
+                            </a>
+                            <form method="post" action="{{ url_for('trade_delete', portfolio_id=portfolio._id, trade_id=t._id) }}" class="d-inline m-0" onsubmit="return confirm('Delete this trade? This will recalculate subsequent positions.');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="version" value="{{ portfolio.version }}">
+                                <button type="submit" class="btn-tb-outline btn-sm" style="min-height:28px; padding:0 8px; font-size:12px; color:var(--tb-neg); border-color:var(--tb-border);">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="tb-panel tb-panel-body text-center py-5">
+    <i class="bi bi-journal-text fs-1 tb-muted" aria-hidden="true"></i>
+    <h2 class="h5 mt-3">No trades yet</h2>
+    <p class="tb-muted mb-4" style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        Record your first buy, or import past trades. Statistics appear after your first closed position.
+    </p>
+    {% if not read_only %}
+    <div class="d-flex justify-content-center gap-2">
+        <a href="{{ url_for('portfolio_import', portfolio_id=portfolio._id) }}" class="btn-tb-outline text-decoration-none">
+            Import trades
+        </a>
+        <a href="{{ url_for('trade_add', portfolio_id=portfolio._id) }}" class="btn-tb text-decoration-none">
+            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Add first trade
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

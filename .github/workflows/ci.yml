@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - "27017:27017"
+    env:
+      # The test suite connects to this database (see tests/conftest.py).
+      TEST_MONGO_URI: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v4
+      # Current release is v10.3.3; setup-uv publishes no v8/v9/v10 moving tag, so pin the exact version.
+      # Python 3.12 is taken from .python-version by uv during sync.
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Sync dependencies
+        run: uv sync --frozen
+      - name: Lint
+        run: uv run ruff check .
+      - name: Test
+        run: uv run pytest -q

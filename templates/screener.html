@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Screener · {{ site_name }}{% endblock %}
+{% block meta_description %}Screen universe stocks by RSI, moving averages, MACD crossovers, and sector on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="tb-context mb-1">Market data · Technical screen</div>
+    <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2">
+        <h1 class="h3 m-0">Screener</h1>
+        <div class="tb-context">
+            Split/dividend-adjusted daily bars · As of <span class="tb-date">{{ as_of_date or 'latest close' }}</span> · {{ stocks|length }} symbol{% if stocks|length != 1 %}s{% endif %} matched
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="tb-panel mb-4">
+    <div class="p-3">
+        <form method="get" action="{{ url_for('screener') }}" class="row g-2 g-md-3 align-items-end m-0">
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+            <input type="hidden" name="dir" value="{{ current_dir }}">
+
+            <div class="col-12 col-md-4 col-lg-3 p-1">
+                <label for="screenerSector" class="form-label tb-context mb-1">Sector</label>
+                <select name="sector" class="form-select form-select-sm" id="screenerSector" aria-label="Sector" style="min-height: 44px;">
+                    <option value="">All sectors</option>
+                    {% for sec in sectors %}
+                    <option value="{{ sec }}" {% if form_values.sector == sec %}selected{% endif %}>{{ sec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-2 p-1">
+                <label for="rsiLt" class="form-label tb-context mb-1">
+                    <a href="{{ url_for('lesson_detail', slug='rsi') }}" class="text-decoration-none" title="Lesson: RSI">RSI below</a>
+                </label>
+                <input type="number" step="any" min="0" max="100" class="form-control form-control-sm" id="rsiLt" name="rsi_lt" value="{{ form_values.rsi_lt }}" placeholder="e.g. 45" style="min-height: 44px;">
+            </div>
+
+            <div class="col-6 col-md-4 col-lg-2 p-1">
+                <label for="rsiGt" class="form-label tb-context mb-1">
+                    <a href="{{ url_for('lesson_detail', slug='rsi') }}" class="text-decoration-none" title="Lesson: RSI">RSI above</a>
+                </label>
+                <input type="number" step="any" min="0" max="100" class="form-control form-control-sm" id="rsiGt" name="rsi_gt" value="{{ form_values.rsi_gt }}" placeholder="e.g. 70" style="min-height: 44px;">
+            </div>
+
+            <div class="col-6 col-md-auto col-lg-auto p-1 d-flex align-items-center" style="min-height: 44px;">
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="aboveSma200" name="above_sma200" value="1" {% if form_values.above_sma200 %}checked{% endif %}>
+                    <label class="form-check-label tb-context text-nowrap" for="aboveSma200">
+                        <a href="{{ url_for('lesson_detail', slug='moving-averages') }}" class="text-decoration-none" title="Lesson: Moving Averages">Above SMA200</a>
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-auto col-lg-auto p-1 d-flex align-items-center" style="min-height: 44px;">
+                <div class="form-check m-0">
+                    <input class="form-check-input" type="checkbox" id="macdCrossUp" name="macd_cross_up" value="1" {% if form_values.macd_cross_up %}checked{% endif %}>
+                    <label class="form-check-label tb-context text-nowrap" for="macdCrossUp">
+                        <a href="{{ url_for('lesson_detail', slug='macd') }}" class="text-decoration-none" title="Lesson: MACD">MACD cross up</a>
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-auto col-lg-auto ms-lg-auto p-1 d-flex gap-2">
+                <button type="submit" class="btn-tb px-3 text-nowrap" style="min-height: 44px; min-width: 80px;">Filter</button>
+                <a href="{{ url_for('screener') }}" class="btn-tb-outline px-3 text-nowrap text-decoration-none d-inline-flex align-items-center justify-content-center" style="min-height: 44px; min-width: 80px;">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Screener Table Panel -->
+<div class="tb-panel">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Screen results</h2>
+        <span class="tb-context">Click column header to sort</span>
+    </div>
+
+    {% if stocks %}
+    <div class="tb-scroll" role="region" aria-label="Screener results" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    {% macro sort_th(field, label, align_right=False) %}
+                    <th {% if align_right %}class="r"{% endif %}>
+                        <a href="{{ url_for('screener', sector=form_values.sector or none, rsi_lt=form_values.rsi_lt or none, rsi_gt=form_values.rsi_gt or none, above_sma200='1' if form_values.above_sma200 else none, macd_cross_up='1' if form_values.macd_cross_up else none, sort=field, dir='desc' if current_sort == field and current_dir == 'asc' else 'asc') }}" class="text-decoration-none tb-head" style="color: inherit;">
+                            {{ label }}
+                            {% if current_sort == field %}
+                                {% if current_dir == 'desc' %}
+                                <span aria-hidden="true">▼</span><span class="visually-hidden">sorted descending</span>
+                                {% else %}
+                                <span aria-hidden="true">▲</span><span class="visually-hidden">sorted ascending</span>
+                                {% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    {% endmacro %}
+
+                    {{ sort_th('symbol', 'Symbol') }}
+                    {{ sort_th('name', 'Name') }}
+                    {{ sort_th('sector', 'Sector') }}
+                    {{ sort_th('last_close', 'Last close', True) }}
+                    {{ sort_th('change_pct', 'Day change', True) }}
+                    {{ sort_th('rsi', 'RSI (14)', True) }}
+                    {{ sort_th('sma50', 'SMA 50', True) }}
+                    {{ sort_th('sma200', 'SMA 200', True) }}
+                    {{ sort_th('avg_volume_20', '20D Vol', True) }}
+                    <th>MACD</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('stock_detail', symbol=stock.symbol) }}" class="fw-semibold text-decoration-none">
+                            {{ stock.symbol }}
+                        </a>
+                    </td>
+                    <td>{{ stock.name }}</td>
+                    <td><span class="tb-muted">{{ stock.sector }}</span></td>
+                    <td class="r">
+                        <span class="tb-num">{{ stock.last_close|fmt_price }}</span>
+                    </td>
+                    <td class="r">
+                        {% if stock.is_pos %}
+                        <span class="tb-num tb-pos">
+                            <span aria-hidden="true">▲</span> +{{ stock.change|fmt_price }} (+{{ stock.change_pct }}%)
+                            <span class="visually-hidden">gain</span>
+                        </span>
+                        {% elif stock.is_neg %}
+                        <span class="tb-num tb-neg">
+                            <span aria-hidden="true">▼</span> {{ stock.change|fmt_price }} ({{ stock.change_pct }}%)
+                            <span class="visually-hidden">loss</span>
+                        </span>
+                        {% else %}
+                        <span class="tb-num tb-muted">0.0000 (+0.00%)</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if stock.rsi is not none %}
+                        <span class="tb-num">{{ "%.1f"|format(stock.rsi) }}</span>
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if stock.sma50 is not none %}
+                        <span class="tb-num">{{ stock.sma50|fmt_price }}</span>
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if stock.sma200 is not none %}
+                        <span class="tb-num">{{ stock.sma200|fmt_price }}</span>
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="r">
+                        {% if stock.avg_volume_20 %}
+                        <span class="tb-num">{{ stock.avg_volume_20|fmt_int }}</span>
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stock.macd_cross_up %}
+                        <span class="tb-chip py-0 px-2 tb-pos">Cross ▲</span>
+                        {% else %}
+                        <span class="tb-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-4 text-center">
+        <p class="tb-muted mb-2">No stocks match the selected criteria.</p>
+        <a href="{{ url_for('screener') }}" class="btn-tb-outline btn-sm text-decoration-none">Clear filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

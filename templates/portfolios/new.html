@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New Portfolio · {{ site_name }}{% endblock %}
+{% block meta_description %}Create a new single-currency trading journal on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="mb-3">
+            <a href="{{ url_for('portfolios_list') }}" class="tb-context text-decoration-none">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to portfolios
+            </a>
+            <h1 class="h3 mt-2 mb-1">Create portfolio</h1>
+            <div class="tb-context">Start a single-currency trading journal</div>
+        </div>
+
+        <div class="tb-panel tb-panel-body">
+            <form method="post" action="{{ url_for('portfolio_create') }}" id="portfolioForm" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="name" class="form-label tb-metric-label">Portfolio name</label>
+                    <input type="text" class="form-control" id="name" name="name" required maxlength="100" placeholder="e.g. Bursa Growth Journal" autofocus>
+                    <div class="form-text tb-context">A descriptive name for your trading book.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="currency" class="form-label tb-metric-label">Base currency</label>
+                    <select class="form-select" id="currency" name="currency" required>
+                        <option value="MYR" selected>MYR — Malaysian Ringgit</option>
+                        <option value="USD">USD — US Dollar</option>
+                    </select>
+                    <div class="form-text tb-context">Single currency. Trades in a different currency are rejected to preserve exact ledger totals without FX distortion.</div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="submit" class="btn-tb">
+                        Create portfolio
+                    </button>
+                    <a href="{{ url_for('portfolios_list') }}" class="btn-tb-outline text-decoration-none">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

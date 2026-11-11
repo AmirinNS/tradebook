@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light" data-variant="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tradebook prototype: A vs B</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- Direction A: Exchange ledger ---------- */
+[data-variant="a"] {
+  --tb-canvas:#F3F5F7; --tb-surface:#FFFFFF; --tb-text:#17212B; --tb-muted:#526171;
+  --tb-accent:#174EA6; --tb-on-accent:#FFFFFF; --tb-pos:#006B54; --tb-neg:#B13A26; --tb-border:#7A8796; --tb-divider:#DDE3E9;
+  --tb-font-ui:"IBM Plex Sans",system-ui,sans-serif; --tb-font-num:"IBM Plex Mono",ui-monospace,monospace; --tb-font-head:"IBM Plex Sans",system-ui,sans-serif;
+  --tb-radius-ctl:4px; --tb-radius-panel:8px; --tb-row:40px; --tb-pad:16px; --tb-gap:24px; --tb-shadow:none;
+}
+[data-variant="a"][data-bs-theme="dark"] {
+  --tb-canvas:#10171F; --tb-surface:#18232E; --tb-text:#EDF3F8; --tb-muted:#A9BACB;
+  --tb-accent:#9FC1FF; --tb-on-accent:#18232E; --tb-pos:#67DFC0; --tb-neg:#FFA184; --tb-border:#728397; --tb-divider:#26323E;
+}
+/* ---------- Direction B: Open journal ---------- */
+[data-variant="b"] {
+  --tb-canvas:#F1F7F6; --tb-surface:#FFFFFF; --tb-text:#163338; --tb-muted:#4B666B;
+  --tb-accent:#006B70; --tb-on-accent:#FFFFFF; --tb-pos:#086943; --tb-neg:#A93625; --tb-border:#718B90; --tb-divider:#DCE8E7;
+  --tb-font-ui:"Source Sans 3",system-ui,sans-serif; --tb-font-num:"Source Sans 3",system-ui,sans-serif; --tb-font-head:"Manrope",system-ui,sans-serif;
+  --tb-radius-ctl:8px; --tb-radius-panel:12px; --tb-row:48px; --tb-pad:24px; --tb-gap:32px; --tb-shadow:0 2px 8px rgb(0 0 0 / 6%);
+}
+[data-variant="b"][data-bs-theme="dark"] {
+  --tb-canvas:#111D20; --tb-surface:#19292D; --tb-text:#EEF6F6; --tb-muted:#AEC2C5;
+  --tb-accent:#75D6D8; --tb-on-accent:#19292D; --tb-pos:#8ADEBE; --tb-neg:#FFB29C; --tb-border:#7C9599; --tb-divider:#28393D;
+}
+/* ---------- Bootstrap mapping ---------- */
+:root, [data-bs-theme] {
+  --bs-body-bg:var(--tb-canvas); --bs-body-color:var(--tb-text); --bs-secondary-color:var(--tb-muted);
+  --bs-border-color:var(--tb-divider); --bs-link-color:var(--tb-accent); --bs-link-hover-color:var(--tb-accent);
+  --bs-body-font-family:var(--tb-font-ui); --bs-emphasis-color:var(--tb-text);
+}
+body { background:var(--tb-canvas); color:var(--tb-text); font-family:var(--tb-font-ui); }
+h1,h2,h3,.tb-head { font-family:var(--tb-font-head); font-weight:600; letter-spacing:-0.01em; }
+.tb-num { font-family:var(--tb-font-num); font-variant-numeric:tabular-nums lining-nums; }
+.tb-pos { color:var(--tb-pos); } .tb-neg { color:var(--tb-neg); }
+.tb-muted { color:var(--tb-muted); }
+a { color:var(--tb-accent); text-underline-offset:2px; } a:hover { color:var(--tb-accent); }
+.tb-date { font-family:var(--tb-font-ui); font-variant-numeric:tabular-nums; }
+.tb-panel { background:var(--tb-surface); border:1px solid var(--tb-divider); border-radius:var(--tb-radius-panel); box-shadow:var(--tb-shadow); }
+.tb-panel-head { padding:12px var(--tb-pad); border-bottom:1px solid var(--tb-divider); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.tb-panel-body { padding:var(--tb-pad); }
+.tb-gap { gap:var(--tb-gap); }
+.tb-nav { background:var(--tb-surface); border-bottom:1px solid var(--tb-divider); min-height:56px; }
+.tb-nav .nav-link { color:var(--tb-muted); font-weight:500; padding:16px 12px; border-bottom:2px solid transparent; }
+.tb-nav .nav-link.active { color:var(--tb-text); font-weight:600; border-bottom-color:var(--tb-accent); }
+[data-variant="b"] .tb-nav .nav-link.active { border-bottom:0; background:color-mix(in srgb, var(--tb-accent) 12%, transparent); border-radius:var(--tb-radius-ctl); }
+.tb-brand { font-family:var(--tb-font-head); font-weight:700; color:var(--tb-text); text-decoration:none; font-size:1.15rem; }
+.btn-tb { background:var(--tb-accent); color:var(--tb-on-accent); border:1px solid var(--tb-accent); border-radius:var(--tb-radius-ctl); min-height:44px; font-weight:600; padding:0 18px; }
+.btn-tb:hover { color:var(--tb-on-accent); text-decoration:underline; }
+.btn-tb-outline { background:transparent; color:var(--tb-accent); border:1px solid var(--tb-border); border-radius:var(--tb-radius-ctl); min-height:44px; font-weight:600; padding:0 16px; }
+.btn-tb:focus-visible, .btn-tb-outline:focus-visible, .nav-link:focus-visible, a:focus-visible, button:focus-visible { outline:2px solid var(--tb-accent); outline-offset:2px; box-shadow:none; }
+.tb-table { width:100%; margin:0; font-size:14px; }
+.tb-table th { color:var(--tb-muted); font-weight:600; font-size:13px; padding:8px var(--tb-pad); border-bottom:1px solid var(--tb-divider); white-space:nowrap; }
+.tb-table td { height:var(--tb-row); padding:0 var(--tb-pad); border-bottom:1px solid var(--tb-divider); vertical-align:middle; white-space:nowrap; }
+.tb-table tr:last-child td { border-bottom:0; }
+.tb-table .r { text-align:right; }
+.tb-metric-label { font-size:13px; color:var(--tb-muted); font-weight:500; }
+.tb-metric-big { font-size:32px; line-height:1.1; font-weight:600; }
+.tb-metric { font-size:22px; font-weight:600; }
+.tb-context { font-size:13px; color:var(--tb-muted); }
+.tb-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--tb-border); border-radius:999px; padding:2px 10px; font-size:12px; color:var(--tb-muted); }
+.tb-banner { background:color-mix(in srgb, var(--tb-accent) 10%, var(--tb-surface)); border:1px solid color-mix(in srgb, var(--tb-accent) 35%, transparent); border-radius:var(--tb-radius-panel); padding:10px 16px; font-size:14px; }
+.tb-scroll { overflow-x:auto; }
+.tb-skip { position:absolute; left:-999px; } .tb-skip:focus { left:16px; top:8px; z-index:10; background:var(--tb-surface); padding:8px; }
+/* proto chrome */
+.proto-bar { position:sticky; top:0; z-index:20; background:#0f141a; color:#e8edf2; font-family:system-ui, sans-serif; font-size:13px; }
+.proto-bar .btn { font-size:12px; padding:4px 10px; }
+.proto-bar .btn.on { background:#e8edf2; color:#0f141a; }
+.screen { display:none; } .screen.on { display:block; }
+.state-hide { display:none !important; }
+#decisions { font-size:14px; }
+.callout { display:inline-flex; width:20px; height:20px; border-radius:50%; background:#d97706; color:#fff; font:600 11px/20px system-ui; justify-content:center; margin-left:6px; vertical-align:middle; }
+body:not(.show-callouts) .callout { display:none; }
+svg text { fill:var(--tb-muted); font-family:var(--tb-font-num); font-size:11px; }
+.tb-game-news { border-left:3px solid var(--tb-accent); padding-left:12px; }
+@media (max-width: 576px) { .tb-metric-big { font-size:28px; } }
+</style>
+</head>
+<body class="show-callouts">
+<div class="proto-bar px-3 py-2 d-flex flex-wrap gap-2 align-items-center">
+  <strong class="me-2">Prototype</strong>
+  <span>Direction</span>
+  <div class="btn-group" role="group" aria-label="Direction"><button class="btn btn-outline-light on" data-set-variant="a">A Exchange ledger</button><button class="btn btn-outline-light" data-set-variant="b">B Open journal</button></div>
+  <span class="ms-2">Screen</span>
+  <div class="btn-group" role="group" aria-label="Screen"><button class="btn btn-outline-light on" data-set-screen="dash">Demo dashboard</button><button class="btn btn-outline-light" data-set-screen="stock">Stock</button><button class="btn btn-outline-light" data-set-screen="game">Game</button></div>
+  <span class="ms-2">State</span>
+  <div class="btn-group" role="group" aria-label="State"><button class="btn btn-outline-light on" data-set-state="default">Default</button><button class="btn btn-outline-light" data-set-state="empty">Empty</button><button class="btn btn-outline-light" data-set-state="error">Error</button></div>
+  <button class="btn btn-outline-light ms-2" id="themeBtn">Dark mode</button>
+  <button class="btn btn-outline-light" id="calloutBtn">Hide callouts</button>
+  <button class="btn btn-outline-light" data-bs-toggle="offcanvas" data-bs-target="#decisions">Design decisions</button>
+</div>
+
+<a class="tb-skip" href="#main">Skip to content</a>
+<nav class="tb-nav navbar navbar-expand-md px-3">
+  <a class="tb-brand me-4" href="#">tradebook</a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+  <div class="collapse navbar-collapse" id="nav">
+    <ul class="navbar-nav me-auto">
+      <li class="nav-item"><a class="nav-link" data-nav="dash" href="#">Journal</a></li>
+      <li class="nav-item"><a class="nav-link" data-nav="stock" href="#">Stocks</a></li>
+      <li class="nav-item"><a class="nav-link" href="#">Screener</a></li>
+      <li class="nav-item"><a class="nav-link" href="#">Learn</a></li>
+      <li class="nav-item"><a class="nav-link" data-nav="game" href="#">Play</a></li>
+    </ul>
+    <div class="d-flex gap-2"><a class="btn-tb-outline d-inline-flex align-items-center text-decoration-none" href="#">Log in</a><a class="btn-tb d-inline-flex align-items-center text-decoration-none" href="#">Create account</a></div>
+  </div>
+</nav>
+
+<main id="main" class="container-xxl px-3 px-lg-4 py-4" style="max-width:1280px">
+
+<!-- ================= DASHBOARD ================= -->
+<section class="screen on" id="screen-dash">
+  <div class="tb-banner mb-3 d-flex flex-wrap gap-2 align-items-center"><i class="bi bi-eye" aria-hidden="true"></i><span><strong>Read-only demo.</strong> Synthetic demo data. Nothing here is a real account.</span><span class="callout">1</span><a href="#" class="ms-auto">Create your own journal</a></div>
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+    <div><h1 class="h3 mb-1">Bursa journal <span class="callout">2</span></h1><div class="tb-context">MYR portfolio · Daily prices as of 10 Nov 2026 · All recorded trades</div></div>
+    <div class="tb-context text-end"><i class="bi bi-lock" aria-hidden="true"></i> Read-only. <a href="#">Create an account</a> to add or import trades.</div>
+  </div>
+
+  <div class="state-error tb-panel p-3 mb-3 state-hide" role="alert"><i class="bi bi-exclamation-triangle tb-neg" aria-hidden="true"></i> <strong>Prices could not be loaded.</strong> Positions show <em>No price</em> until the next refresh. Your trades are unaffected.</div>
+
+  <!-- A: horizontal metric strip -->
+  <div class="va">
+    <div class="row g-3 mb-3 state-default">
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Realized P/L <span class="callout">3</span></div><div class="tb-metric-big tb-num tb-pos"><span aria-hidden="true">▲</span> +1,240.50<span class="visually-hidden"> gain</span></div><div class="tb-context">MYR, after recorded fees</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Unrealized P/L</div><div class="tb-metric tb-num tb-pos"><span aria-hidden="true">▲</span> +380.00</div><div class="tb-context">At 10 Nov 2026 closes</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Win rate</div><div class="tb-metric tb-num">60.0%</div><div class="tb-context">6 of 10 closed lot portions</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Profit factor</div><div class="tb-metric tb-num">1.75</div><div class="tb-context"><a href="#">What is profit factor?</a></div></div></div>
+    </div>
+    <div class="tb-panel mb-3 state-default">
+      <div class="tb-panel-head"><h2 class="h6 m-0">Open positions <span class="callout">4</span></h2><span class="tb-context">MYR · Cost/share includes allocated buy fees</span></div>
+      <div class="tb-scroll" role="region" aria-label="Open positions, scrolls horizontally" tabindex="0"><table class="tb-table"><thead><tr><th>Symbol</th><th class="r">Shares</th><th class="r">Cost/share</th><th class="r">Last close</th><th class="r">Unrealized</th><th class="r">Price date</th></tr></thead><tbody id="posA"></tbody></table></div>
+    </div>
+    <div class="tb-panel state-default">
+      <div class="tb-panel-head"><h2 class="h6 m-0">Realized lot portions</h2><a class="btn-tb-outline d-inline-flex align-items-center text-decoration-none" href="#"><i class="bi bi-calendar3 me-2" aria-hidden="true"></i>P/L calendar</a></div>
+      <div class="tb-scroll" role="region" aria-label="Realized trades" tabindex="0"><table class="tb-table"><thead><tr><th>Symbol</th><th>Closed</th><th class="r">Shares</th><th class="r">Entry</th><th class="r">Exit</th><th class="r">Net P/L</th></tr></thead><tbody id="realA"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- B: summary rail + workspace -->
+  <div class="vb">
+    <div class="row g-4 state-default">
+      <div class="col-lg-4">
+        <div class="tb-panel tb-panel-body">
+          <div class="tb-metric-label">Realized P/L <span class="callout">3</span></div>
+          <div class="tb-metric-big tb-num tb-pos"><span aria-hidden="true">▲</span> +1,240.50<span class="visually-hidden"> gain</span></div>
+          <div class="tb-context mb-3">MYR, after recorded fees</div>
+          <dl class="row mb-2" style="row-gap:12px">
+            <dt class="col-7 fw-normal tb-muted">Unrealized</dt><dd class="col-5 text-end tb-num tb-pos mb-0"><span aria-hidden="true">▲</span> +380.00</dd>
+            <dt class="col-7 fw-normal tb-muted">Win rate</dt><dd class="col-5 text-end tb-num mb-0">60.0%</dd>
+            <dt class="col-7 fw-normal tb-muted">Profit factor</dt><dd class="col-5 text-end tb-num mb-0">1.75</dd>
+          </dl>
+          <p class="tb-context mb-2">Statistics count closed lot portions in first-in, first-out order. Break-even portions are neither wins nor losses.</p>
+          <a href="#">What is FIFO?</a>
+        </div>
+        <div class="tb-panel tb-panel-body mt-4"><div class="tb-head mb-1">Review by day</div><p class="tb-context mb-3">See signed realized P/L for each trading day.</p><a class="btn-tb-outline d-inline-flex align-items-center text-decoration-none" href="#"><i class="bi bi-calendar3 me-2" aria-hidden="true"></i>Open P/L calendar</a></div>
+      </div>
+      <div class="col-lg-8">
+        <div class="tb-panel mb-4">
+          <div class="tb-panel-head"><h2 class="h6 m-0 tb-head">Open positions <span class="callout">4</span></h2><span class="tb-context">Prices dated 10 Nov 2026</span></div>
+          <div class="tb-scroll" role="region" aria-label="Open positions" tabindex="0"><table class="tb-table"><thead><tr><th>Symbol</th><th class="r">Shares</th><th class="r">Cost/share</th><th class="r">Last</th><th class="r">Unrealized MYR</th></tr></thead><tbody id="posB"></tbody></table></div>
+        </div>
+        <div class="tb-panel">
+          <div class="tb-panel-head"><h2 class="h6 m-0 tb-head">Realized lot portions</h2></div>
+          <div class="tb-scroll" role="region" aria-label="Realized trades" tabindex="0"><table class="tb-table"><thead><tr><th>Closed</th><th>Symbol</th><th class="r">Shares</th><th class="r">Net P/L MYR</th></tr></thead><tbody id="realB"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="state-empty tb-panel tb-panel-body text-center py-5 state-hide">
+    <i class="bi bi-journal-text fs-1 tb-muted" aria-hidden="true"></i>
+    <h2 class="h5 mt-3">No trades yet</h2>
+    <p class="tb-muted mb-3">Record your first buy, or import a CSV of past trades. Statistics appear after your first closed position.</p>
+    <div class="d-flex justify-content-center gap-2"><button class="btn-tb-outline">Import CSV</button><button class="btn-tb">Add first trade</button></div>
+  </div>
+</section>
+
+<!-- ================= STOCK ================= -->
+<section class="screen" id="screen-stock">
+  <div class="tb-context mb-1">Stocks / DEMO1 · Synthetic demo · MYR</div>
+  <div class="d-flex flex-wrap align-items-baseline gap-3 mb-1"><h1 class="h3 m-0">DEMO1 <span class="callout">5</span></h1><span class="tb-metric tb-num">13.4000</span><span class="tb-num tb-pos"><span aria-hidden="true">▲</span> +0.2000 (+1.52%)</span></div>
+  <div class="tb-context mb-3">Last available daily close · 10 Nov 2026 · Split/dividend-adjusted daily bars</div>
+  <div class="state-error tb-panel p-3 mb-3 state-hide" role="alert"><strong>No price data for this symbol yet.</strong> Run the price refresh, or pick a demo symbol.</div>
+  <div class="row g-4 state-default">
+    <div class="col">
+      <div class="tb-panel">
+        <div class="tb-panel-head"><span class="tb-context">Candles · <span style="border-bottom:2px solid var(--tb-accent)">SMA20</span> · <span style="border-bottom:2px dashed var(--tb-muted)">SMA50</span></span><div class="btn-group btn-group-sm" role="group" aria-label="Range"><button class="btn-tb-outline" style="min-height:32px">3M</button><button class="btn-tb" style="min-height:32px">6M</button><button class="btn-tb-outline" style="min-height:32px">1Y</button></div></div>
+        <div class="tb-panel-body pb-0"><svg id="priceSvg" width="100%" height="320" role="img" aria-label="DEMO1 daily candles with SMA20 and SMA50 over 6 months"></svg></div>
+        <div class="tb-panel-body py-2 border-top" style="border-color:var(--tb-divider)!important"><div class="tb-context">RSI14 <span class="tb-num">56.2</span> · guides at 30 and 70 <a href="#" class="ms-2">Learn RSI</a></div><svg id="rsiSvg" width="100%" height="96" role="img" aria-label="RSI 14"></svg></div>
+        <div class="tb-panel-body py-2 border-top" style="border-color:var(--tb-divider)!important"><div class="tb-context">MACD 12/26/9 · line, dashed signal, histogram <a href="#" class="ms-2">Learn MACD</a></div><svg id="macdSvg" width="100%" height="112" role="img" aria-label="MACD"></svg></div>
+        <div class="tb-panel-body py-2 border-top tb-context" style="border-color:var(--tb-divider)!important">Charts by TradingView Lightweight Charts (prototype draws a static SVG stand-in).</div>
+      </div>
+    </div>
+    <div class="col-lg-3 vb">
+      <div class="tb-panel tb-panel-body"><div class="tb-head mb-2">Chart guide</div><p class="tb-context">Daily bars. Each candle is one trading day: body from open to close, wick from low to high. Hollow bodies closed higher than they opened.</p><p class="tb-context mb-2">RSI above 70 or below 30 marks a strong recent move. It is not a signal to buy or sell.</p><a href="#">Learn candlesticks</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section class="screen" id="screen-game">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div><h1 class="h3 m-0">Play the market <span class="callout">6</span></h1><div class="tb-context">Fictional simulation, not brokerage trading</div></div>
+    <div class="tb-head tb-num fs-5" aria-live="polite" id="dayLabel">Day 01 / 30</div>
+  </div>
+  <div class="state-error tb-panel p-3 mb-3 state-hide" role="alert"><strong>That action was not applied.</strong> The game moved on in another tab. Reload to see the current day. Nothing was charged twice.</div>
+
+  <div class="va">
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Cash</div><div class="tb-metric tb-num" id="cashA">MYR 20,000.00</div><div class="tb-context">Includes loan</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Loan principal</div><div class="tb-metric tb-num">MYR 10,000.00</div><div class="tb-context">0.5% per day</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Accrued interest</div><div class="tb-metric tb-num" id="intA">MYR 0.00</div><div class="tb-context">Charged on Next day</div></div></div>
+      <div class="col-6 col-lg-3"><div class="tb-panel tb-panel-body h-100"><div class="tb-metric-label">Net worth</div><div class="tb-metric tb-num" id="nwA">MYR 10,000.00</div><div class="tb-context">Cash + holdings − debt</div></div></div>
+    </div>
+  </div>
+  <div class="vb">
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7"><div class="tb-panel tb-panel-body h-100"><div class="tb-head mb-2">Your money</div>
+        <dl class="row mb-1" style="row-gap:8px"><dt class="col-7 fw-normal tb-muted">Cash</dt><dd class="col-5 text-end tb-num mb-0" id="cashB">MYR 20,000.00</dd><dt class="col-7 fw-normal tb-muted">Holdings value</dt><dd class="col-5 text-end tb-num mb-0">MYR 0.00</dd><dt class="col-7 fw-semibold">Net worth</dt><dd class="col-5 text-end tb-num fw-semibold mb-0" id="nwB">MYR 10,000.00</dd></dl>
+        <p class="tb-context m-0">Cash includes a MYR 10,000.00 loan.</p></div></div>
+      <div class="col-lg-5"><div class="tb-panel tb-panel-body h-100"><div class="tb-head mb-2">Before you advance</div>
+        <dl class="row mb-2" style="row-gap:8px"><dt class="col-7 fw-normal tb-muted">Loan principal</dt><dd class="col-5 text-end tb-num mb-0">MYR 10,000.00</dd><dt class="col-7 fw-normal tb-muted">Interest due</dt><dd class="col-5 text-end tb-num mb-0" id="intB">MYR 0.00</dd><dt class="col-7 fw-normal tb-muted">Daily rate</dt><dd class="col-5 text-end tb-num mb-0">0.5%</dd></dl>
+        <button class="btn-tb-outline">Repay loan</button></div></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="tb-panel mb-4">
+        <div class="tb-panel-head"><h2 class="h6 m-0 tb-head">Market board</h2><span class="tb-context">Six fictional companies · prices in MYR</span></div>
+        <div class="tb-scroll" role="region" aria-label="Market board" tabindex="0"><table class="tb-table"><thead><tr><th>Company</th><th>Sector</th><th class="r">Price</th><th class="r">Change</th><th class="r">Held</th></tr></thead><tbody id="board"></tbody></table></div>
+      </div>
+      <div class="tb-panel tb-panel-body tb-game-news" aria-live="polite"><div class="tb-metric-label">News</div><div id="news">Day 1: Simulation begins. Prices move from tomorrow.</div></div>
+    </div>
+    <div class="col-lg-4">
+      <div class="tb-panel tb-panel-body mb-4">
+        <div class="tb-head mb-2">Trade</div>
+        <label class="form-label tb-context" for="co">Company</label>
+        <select class="form-select mb-2" id="co"></select>
+        <div class="btn-group w-100 mb-2" role="group" aria-label="Side"><input type="radio" class="btn-check" name="side" id="buy" checked><label class="btn btn-outline-secondary" for="buy">Buy</label><input type="radio" class="btn-check" name="side" id="sell"><label class="btn btn-outline-secondary" for="sell">Sell</label></div>
+        <label class="form-label tb-context" for="qty">Shares</label>
+        <input class="form-control tb-num mb-2" id="qty" inputmode="numeric" value="100">
+        <button class="btn-tb-outline w-100">Place order</button>
+      </div>
+      <div class="tb-panel tb-panel-body"><p class="tb-context">Next day charges 0.5% on outstanding principal and moves prices.</p><button class="btn-tb w-100" id="nextDay">Next day <i class="bi bi-arrow-right" aria-hidden="true"></i></button></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="decisions" style="width:min(560px,100vw)">
+  <div class="offcanvas-header"><h2 class="offcanvas-title h5">Design decisions</h2><button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button></div>
+  <div class="offcanvas-body" id="decisions-body"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const root = document.documentElement;
+const fmt = (n, d = 2) => n.toLocaleString("en-MY", { minimumFractionDigits: d, maximumFractionDigits: d });
+const pl = (n) => n > 0 ? `<span class="tb-pos"><span aria-hidden="true">▲</span> +${fmt(n)}<span class="visually-hidden"> gain</span></span>` : n < 0 ? `<span class="tb-neg"><span aria-hidden="true">▼</span> ${fmt(n)}<span class="visually-hidden"> loss</span></span>` : `<span>0.00</span>`;
+
+// Synthetic demo content (identical in both directions)
+const positions = [["DEMO1",200,12.2,13.4],["DEMO2",100,8.6,10.0],["DEMO4",300,4.15,3.98],["DEMO5",50,21.3,22.05]];
+const realized = [["DEMO3","09 Nov 2026",100,10.0,12.0,180],["DEMO1","05 Nov 2026",100,11.4,12.9,141.3],["DEMO4","30 Oct 2026",200,4.6,4.12,-104.8],["DEMO2","24 Oct 2026",150,7.9,8.85,133.7]];
+const posRow = (p, dated) => { const u = (p[3]-p[2])*p[1]; return `<tr><td class="fw-semibold">${p[0]}</td><td class="r tb-num">${p[1]}</td><td class="r tb-num">${fmt(p[2],4)}</td><td class="r tb-num">${fmt(p[3],4)}</td><td class="r tb-num">${pl(u)}</td>${dated ? '<td class="r tb-date tb-muted">10 Nov 2026</td>' : ""}</tr>`; };
+$("#posA").innerHTML = positions.map(p => posRow(p, true)).join("");
+$("#posB").innerHTML = positions.map(p => posRow(p, false)).join("");
+$("#realA").innerHTML = realized.map(r => `<tr><td class="fw-semibold">${r[0]}</td><td class="tb-date">${r[1]}</td><td class="r tb-num">${r[2]}</td><td class="r tb-num">${fmt(r[3],4)}</td><td class="r tb-num">${fmt(r[4],4)}</td><td class="r tb-num">${pl(r[5])}</td></tr>`).join("");
+$("#realB").innerHTML = realized.map(r => `<tr><td class="tb-date">${r[1]}</td><td class="fw-semibold">${r[0]}</td><td class="r tb-num">${r[2]}</td><td class="r tb-num">${pl(r[5])}</td></tr>`).join("");
+
+// Game
+const companies = [["Fir Timber","Materials",12],["Kite Logistics","Transport",8],["Reed Foods","Consumer",5.5],["Dune Energy","Energy",15.2],["Elm Health","Healthcare",22],["Vale Telco","Telecom",3.4]];
+let day = 1, interest = 0, prev = companies.map(c => c[2]), prices = [...prev];
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const newsPool = ["Energy prices jump on supply worries.","Consumer spending slows before school holidays.","Telecom regulator approves new spectrum.","Healthcare stocks rally on hospital expansion.","Logistics demand rises at Port Klang.","Timber exports fall on weak demand."];
+function renderGame() {
+  $("#board").innerHTML = companies.map((c, i) => { const ch = day === 1 ? null : prices[i] - prev[i]; return `<tr><td class="fw-semibold">${c[0]}</td><td class="tb-muted">${c[1]}</td><td class="r tb-num">${fmt(prices[i],4)}</td><td class="r tb-num">${ch === null ? '<span class="tb-muted">N/A</span>' : pl(ch)}</td><td class="r tb-num">0</td></tr>`; }).join("");
+  $("#co").innerHTML = companies.map(c => `<option>${c[0]}</option>`).join("");
+  const cash = 20000 - interest, nw = cash - 10000;
+  $("#dayLabel").textContent = `Day ${String(day).padStart(2,"0")} / 30`;
+  ["#cashA","#cashB"].forEach(s => $(s).textContent = "MYR " + fmt(cash));
+  ["#intA","#intB"].forEach(s => $(s).textContent = "MYR " + fmt(interest));
+  ["#nwA","#nwB"].forEach(s => $(s).textContent = "MYR " + fmt(nw));
+}
+$("#nextDay").addEventListener("click", () => { if (day >= 30) return; prev = [...prices]; prices = prices.map(p => Math.max(0.5, p * (1 + (rnd() - 0.5) * 0.12))); interest += 50; day++; $("#news").textContent = `Day ${day}: ${newsPool[day % newsPool.length]}`; renderGame(); });
+renderGame();
+
+// Synthetic chart (SVG stand-in for the chart library)
+function series(n) { let p = 11, out = []; for (let i = 0; i < n; i++) { const o = p, c = Math.max(6, o * (1 + (rnd() - 0.47) * 0.05)); out.push({ o, c, h: Math.max(o, c) * (1 + rnd() * 0.015), l: Math.min(o, c) * (1 - rnd() * 0.015) }); p = c; } return out; }
+const bars = series(120);
+function sma(arr, n) { return arr.map((_, i) => i < n - 1 ? null : arr.slice(i - n + 1, i + 1).reduce((a, b) => a + b, 0) / n); }
+function drawCharts() {
+  const css = getComputedStyle(root), pos = css.getPropertyValue("--tb-pos").trim(), neg = css.getPropertyValue("--tb-neg").trim(), acc = css.getPropertyValue("--tb-accent").trim(), mut = css.getPropertyValue("--tb-muted").trim(), div = css.getPropertyValue("--tb-divider").trim();
+  const svg = $("#priceSvg"), W = svg.clientWidth || 900, H = 320, closes = bars.map(b => b.c);
+  const hi = Math.max(...bars.map(b => b.h)), lo = Math.min(...bars.map(b => b.l)), x = i => 8 + i * (W - 60) / bars.length, y = v => 10 + (hi - v) / (hi - lo) * (H - 30), bw = Math.max(2, (W - 60) / bars.length * 0.6);
+  let s = "";
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; s += `<line x1="0" x2="${W-50}" y1="${y(v)}" y2="${y(v)}" stroke="${div}"/><text x="${W-46}" y="${y(v)+4}">${v.toFixed(2)}</text>`; }
+  bars.forEach((b, i) => { const up = b.c >= b.o, col = up ? pos : neg; s += `<line x1="${x(i)}" x2="${x(i)}" y1="${y(b.h)}" y2="${y(b.l)}" stroke="${col}"/><rect x="${x(i)-bw/2}" y="${y(Math.max(b.o,b.c))}" width="${bw}" height="${Math.max(1,Math.abs(y(b.o)-y(b.c)))}" fill="${up ? "none" : col}" stroke="${col}"/>`; });
+  const line = (arr, col, dash) => `<polyline fill="none" stroke="${col}" stroke-width="1.6" ${dash ? 'stroke-dasharray="5 4"' : ""} points="${arr.map((v,i) => v === null ? "" : `${x(i)},${y(v)}`).join(" ")}"/>`;
+  s += line(sma(closes, 20), acc) + line(sma(closes, 50), mut, true);
+  svg.innerHTML = s;
+  // RSI and MACD (illustrative waves)
+  const r = $("#rsiSvg"), rW = r.clientWidth || 900, ry = v => 4 + (100 - v) / 100 * 88;
+  r.innerHTML = [30,70].map(v => `<line x1="0" x2="${rW-50}" y1="${ry(v)}" y2="${ry(v)}" stroke="${div}" stroke-dasharray="3 3"/><text x="${rW-46}" y="${ry(v)+4}">${v}</text>`).join("") + `<polyline fill="none" stroke="${acc}" stroke-width="1.6" points="${bars.map((_, i) => `${x(i)},${ry(50 + 18*Math.sin(i/9) + 6*Math.sin(i/3))}`).join(" ")}"/>`;
+  const m = $("#macdSvg"), mW = m.clientWidth || 900, my = v => 56 - v * 40;
+  m.innerHTML = `<line x1="0" x2="${mW-50}" y1="56" y2="56" stroke="${div}"/>` + bars.map((_, i) => { const h = 0.6*Math.sin(i/11) - 0.4*Math.sin(i/15); return `<rect x="${x(i)-bw/2}" y="${Math.min(56, my(h))}" width="${bw}" height="${Math.abs(my(h)-56)}" fill="${h >= 0 ? pos : neg}" opacity="0.55"/>`; }).join("") + `<polyline fill="none" stroke="${acc}" stroke-width="1.4" points="${bars.map((_, i) => `${x(i)},${my(0.8*Math.sin(i/11))}`).join(" ")}"/><polyline fill="none" stroke="${mut}" stroke-dasharray="5 4" stroke-width="1.4" points="${bars.map((_, i) => `${x(i)},${my(0.8*Math.sin((i-6)/11))}`).join(" ")}"/>`;
+}
+
+// Decisions per direction
+const decisions = {
+  a: [["Read-only demo banner above everything","Recruiters land here without an account; the banner tells them the numbers are synthetic and safe to explore.","Footer note","Uses one line of the first viewport."],
+      ["Page title plus a context line (currency, price date, period)","Traders need to know which currency and which day the numbers describe before trusting them.","Title only","More text in the header."],
+      ["Realized P/L as the only 32px number, in a 4-card strip","It is the one result the journal can state with certainty; a strip lets a recruiter scan all four results in one glance.","Account value headline","Unsupported by the journal model, so avoided."],
+      ["Dense 40px table rows, mono tabular numbers, right-aligned","Traders compare many positions; aligned decimals make differences readable without reading each digit.","Card list","Less friendly on phones, so tables scroll horizontally in a labeled region."],
+      ["Stock page leads with symbol, price, change and data date","The core job is checking one stock fast; adjusted-data and date notes prevent false precision.","Hero chart without numbers","Chart starts lower on the page."],
+      ["Game uses the same table and card components with a compact HUD","Shows the game is part of one design system; loan and interest are always visible next to cash.","Separate game skin","Less playful."]],
+  b: [["Read-only demo banner above everything","Same as A: recruiters must know the data is synthetic.","Footer note","Uses one line of the first viewport."],
+      ["Friendly heading font (Manrope) with plain-language context","Feels approachable to newer traders while keeping exact numbers.","IBM Plex throughout","Less of a market-workstation identity."],
+      ["Summary rail on the left with a short FIFO definition","Explains the statistics where they are shown, which helps novices and shows care to reviewers.","Metric strip","Fewer table rows in the first viewport."],
+      ["Roomier 48px rows, 12px panel radius, soft single shadow","Calmer reading for occasional journaling sessions.","Dense rows","Shows fewer positions without scrolling."],
+      ["Chart guide side panel with lesson links","Teaches what candles and RSI mean and states they are not buy or sell signals.","No guide","Narrower chart at desktop widths."],
+      ["Game explains money in a 'Your money' block and a 'Before you advance' block","Makes the borrowed cash impossible to miss for casual players.","Compact HUD","Takes more vertical space."]]
+};
+function renderDecisions() { const v = root.dataset.variant; $("#decisions-body").innerHTML = `<p class="tb-muted">Direction ${v.toUpperCase()}. Numbers match the orange callouts.</p><table class="table table-sm"><thead><tr><th>#</th><th>Decision</th><th>Why</th><th>Alternative</th><th>Trade-off</th></tr></thead><tbody>${decisions[v].map((d,i) => `<tr><td>${i+1}</td><td>${d[0]}</td><td>${d[1]}</td><td>${d[2]}</td><td>${d[3]}</td></tr>`).join("")}</tbody></table>`; }
+
+// Controls
+function setVariant(v) { root.dataset.variant = v; $$(".va").forEach(e => e.classList.toggle("d-none", v !== "a")); $$(".vb").forEach(e => e.classList.toggle("d-none", v !== "b")); $$("[data-set-variant]").forEach(b => b.classList.toggle("on", b.dataset.setVariant === v)); renderDecisions(); requestAnimationFrame(drawCharts); }
+function setScreen(s) { $$(".screen").forEach(e => e.classList.toggle("on", e.id === "screen-" + s)); $$("[data-set-screen]").forEach(b => b.classList.toggle("on", b.dataset.setScreen === s)); $$("[data-nav]").forEach(a => a.classList.toggle("active", a.dataset.nav === s)); requestAnimationFrame(drawCharts); }
+function setState(st) { $$(".state-default").forEach(e => e.classList.toggle("state-hide", st !== "default")); $$(".state-empty").forEach(e => e.classList.toggle("state-hide", st !== "empty")); $$(".state-error").forEach(e => e.classList.toggle("state-hide", st !== "error")); $$("[data-set-state]").forEach(b => b.classList.toggle("on", b.dataset.setState === st)); }
+$$("[data-set-variant]").forEach(b => b.addEventListener("click", () => setVariant(b.dataset.setVariant)));
+$$("[data-set-screen]").forEach(b => b.addEventListener("click", () => setScreen(b.dataset.setScreen)));
+$$("[data-nav]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); setScreen(a.dataset.nav); }));
+$$("[data-set-state]").forEach(b => b.addEventListener("click", () => setState(b.dataset.setState)));
+$("#themeBtn").addEventListener("click", () => { const d = root.dataset.bsTheme === "dark"; root.dataset.bsTheme = d ? "light" : "dark"; $("#themeBtn").textContent = d ? "Dark mode" : "Light mode"; drawCharts(); });
+$("#calloutBtn").addEventListener("click", () => { document.body.classList.toggle("show-callouts"); $("#calloutBtn").textContent = document.body.classList.contains("show-callouts") ? "Hide callouts" : "Show callouts"; });
+window.addEventListener("resize", drawCharts);
+setVariant(new URLSearchParams(location.search).get("variant") || "a"); setScreen("dash"); setState("default");
+</script>
+</body>
+</html>

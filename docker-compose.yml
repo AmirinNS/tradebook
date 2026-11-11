@@ -1,0 +1,34 @@
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    # Published for local tests that connect to the host port (e.g. mongosh, the test suite).
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build: .
+    ports:
+      # macOS AirPlay Receiver often holds port 5000; set WEB_PORT=5050 in your shell if so.
+      - "${WEB_PORT:-5000}:5000"
+    # .env supplies SECRET_KEY (and optional overrides). Copy .env.example to .env first.
+    env_file: .env
+    environment:
+      # These win over env_file so the container always targets the compose mongo service,
+      # runs in production (waitress), and allows cookies over plain HTTP for local Compose.
+      MONGO_URI: mongodb://mongo:27017
+      APP_ENV: production
+      COOKIE_SECURE: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

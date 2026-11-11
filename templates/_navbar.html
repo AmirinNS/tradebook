@@ -1,0 +1,44 @@
+<nav class="tb-nav navbar navbar-expand-md px-3">
+    <div class="container-xxl px-0" style="max-width:1280px; width:100%; min-width:0;">
+        <a class="tb-brand me-2 me-md-4" href="{{ url_for('index') }}">tradebook</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/portfolios') %}active{% endif %}" href="{{ url_for('portfolios_list') }}">Journal</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/stocks') %}active{% endif %}" href="{{ url_for('stocks') }}">Stocks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/screener') %}active{% endif %}" href="{{ url_for('screener') }}">Screener</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/learn') %}active{% endif %}" href="{{ url_for('learn') }}">Learn</a>
+                </li>
+                {% if not current_user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/demo') %}active{% endif %}" href="{{ url_for('demo') }}">Demo</a>
+                </li>
+                {% endif %}
+            </ul>
+            <div class="d-flex flex-wrap flex-md-nowrap align-items-center gap-2 mt-2 mt-md-0">
+                <button class="btn-tb-outline btn-sm" id="themeToggle" type="button" aria-label="Toggle theme">
+                    <i class="bi bi-moon me-1" aria-hidden="true"></i> Dark mode
+                </button>
+                {% if current_user.is_authenticated %}
+                <a class="nav-link py-1 px-2 d-inline-block text-truncate" style="max-width: 24ch;" href="{{ url_for('account') }}" title="{{ current_user.email }}">{{ current_user.email }}</a>
+                <form method="post" action="{{ url_for('logout') }}" class="d-inline m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn-tb-outline btn-sm" type="submit">Log out</button>
+                </form>
+                {% else %}
+                <a class="btn-tb-outline btn-sm text-decoration-none" href="{{ url_for('login') }}">Log in</a>
+                <a class="btn-tb btn-sm text-decoration-none" href="{{ url_for('register') }}">Create account</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

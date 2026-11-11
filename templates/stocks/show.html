@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ symbol }} · Stocks · {{ site_name }}{% endblock %}
+{% block meta_description %}Daily candlestick chart and technical indicators for {{ symbol }} ({{ info.name }}).{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <div class="tb-context mb-1">
+        <a href="{{ url_for('stocks') }}" class="text-decoration-none">Stocks</a> / {{ symbol }} · {{ info.name }} · {{ info.exchange }} · {{ info.currency }}
+        {% if is_demo %}
+        · <span class="badge text-bg-secondary" style="font-weight: 500;">Synthetic demo</span>
+        {% endif %}
+    </div>
+
+    <div class="d-flex flex-wrap align-items-baseline gap-2 gap-sm-3 mb-1">
+        <h1 class="h3 m-0">{{ symbol }}</h1>
+        {% if quote.has_data %}
+        <span class="tb-metric tb-num">{{ quote.last_close }}</span>
+        <span class="tb-context">{{ info.currency }}</span>
+        {% if quote.is_pos %}
+        <span class="tb-num tb-pos">
+            <span aria-hidden="true">▲</span> +{{ quote.change }} ({{ quote.change_pct }})
+            <span class="visually-hidden">gain</span>
+        </span>
+        {% elif quote.is_neg %}
+        <span class="tb-num tb-neg">
+            <span aria-hidden="true">▼</span> {{ quote.change }} ({{ quote.change_pct }})
+            <span class="visually-hidden">loss</span>
+        </span>
+        {% else %}
+        <span class="tb-num tb-muted">0.0000 (+0.00%)</span>
+        {% endif %}
+        {% else %}
+        <span class="tb-metric tb-muted">No price</span>
+        {% endif %}
+    </div>
+
+    {% if quote.has_data %}
+    <div class="tb-context">
+        Last available daily close · <span class="tb-date">{{ quote.last_date }}</span> · Split/dividend-adjusted daily bars
+    </div>
+    {% endif %}
+</div>
+
+{% if not quote.has_data %}
+<div class="alert alert-warning tb-panel p-3 mb-4" role="alert">
+    <strong>No price data for this symbol yet.</strong> Run the price refresh, or pick a demo symbol.
+</div>
+{% else %}
+<div class="row g-4" id="chartWrapper" data-symbol="{{ symbol }}">
+    <div class="col-lg-9">
+        <div class="tb-panel">
+            <div class="tb-panel-head">
+                <span class="tb-context">
+                    Candles · <span style="border-bottom: 2px solid var(--tb-accent)">SMA20</span> · <span style="border-bottom: 2px dashed var(--tb-muted)">SMA50</span>
+                </span>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Range">
+                    <button type="button" class="btn-tb-outline btn-sm range-btn" data-range="3m" style="min-height: 32px">3M</button>
+                    <button type="button" class="btn-tb btn-sm range-btn" data-range="6m" style="min-height: 32px">6M</button>
+                    <button type="button" class="btn-tb-outline btn-sm range-btn" data-range="1y" style="min-height: 32px">1Y</button>
+                    <button type="button" class="btn-tb-outline btn-sm range-btn" data-range="all" style="min-height: 32px">All</button>
+                </div>
+            </div>
+
+            <div class="tb-panel-body p-0 position-relative">
+                <div id="priceChart" style="height: 320px; width: 100%;"></div>
+            </div>
+
+            <div class="tb-panel-body py-2 border-top" style="border-color: var(--tb-divider) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="tb-context">RSI 14 · guides at 30 and 70</div>
+                    <div class="tb-context tb-num" id="rsiValue">RSI: —</div>
+                </div>
+                <div id="rsiChart" style="height: 96px; width: 100%;"></div>
+            </div>
+
+            <div class="tb-panel-body py-2 border-top" style="border-color: var(--tb-divider) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="tb-context">MACD 12/26/9 · line, dashed signal, histogram</div>
+                    <div class="tb-context tb-num" id="macdValue">MACD: —</div>
+                </div>
+                <div id="macdChart" style="height: 112px; width: 100%;"></div>
+            </div>
+
+            <div class="tb-panel-body py-2 border-top tb-context" style="border-color: var(--tb-divider) !important; word-break: break-word;">
+                TradingView Lightweight Charts™ · Copyright (c) TradingView, Inc. <a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">https://www.tradingview.com/</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="tb-panel tb-panel-body">
+            <div class="tb-head mb-2">Chart guide</div>
+            <p class="tb-context">
+                Daily bars. Each candle represents one trading day: body from open to close, wick from low to high. Hollow bodies closed higher than they opened.
+            </p>
+            <p class="tb-context mb-2">
+                RSI above 70 or below 30 indicates strong recent momentum. It is not an automatic signal to buy or sell.
+            </p>
+            <p class="tb-context mb-0">
+                MACD tracks moving average convergence/divergence. The histogram reflects momentum relative to the signal line.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if quote.has_data %}
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+<script src="{{ url_for('static', filename='js/stock_chart.js') }}"></script>
+{% endif %}
+{% endblock %}

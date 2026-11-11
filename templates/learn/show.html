@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} · Learn · {{ site_name }}{% endblock %}
+{% block meta_description %}{{ lesson.summary }} Educational lesson on {{ site_name }}.{% endblock %}
+
+{% block content %}
+<div class="mb-4" style="max-width: 70ch;">
+    <div class="tb-context mb-1">
+        <a href="{{ url_for('learn') }}" class="tb-context text-decoration-none">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Lessons
+        </a>
+        / Lesson {{ lesson.order }}
+    </div>
+    <h1 class="h2 m-0">{{ lesson.title }}</h1>
+    <div class="d-flex flex-wrap align-items-center gap-3 mt-2 tb-context">
+        <span><i class="bi bi-clock me-1" aria-hidden="true"></i>{{ lesson.reading_time }} min read</span>
+        <span>·</span>
+        <span>Lesson {{ lesson.order }} of {{ total_lessons }}</span>
+        {% if is_completed %}
+        <span>·</span>
+        <span class="tb-pos fw-semibold d-inline-flex align-items-center gap-1">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Completed
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Educational Disclaimer Banner -->
+<div class="tb-banner mb-4 d-flex align-items-center gap-2" style="max-width: 70ch;" role="note">
+    <i class="bi bi-info-circle tb-muted" aria-hidden="true"></i>
+    <span><strong>Notice:</strong> Educational content, not financial advice.</span>
+</div>
+
+<!-- Main Lesson Prose Content -->
+<article class="tb-panel p-3 p-md-4 mb-4" style="max-width: 70ch;">
+    <div class="tb-prose">
+        {{ lesson.html|safe }}
+    </div>
+</article>
+
+<!-- Lesson Action & Completion Strip -->
+<div class="tb-panel p-3 p-md-4 mb-4" style="max-width: 70ch;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            {% if is_completed %}
+            <div class="d-flex align-items-center gap-2 text-success">
+                <i class="bi bi-check-circle-fill fs-5" aria-hidden="true"></i>
+                <span class="fw-semibold">You have completed this lesson.</span>
+            </div>
+            <div class="tb-context mt-1">Recorded in your learning progress.</div>
+            {% elif current_user.is_authenticated %}
+            <div class="fw-semibold">Finished reading?</div>
+            <div class="tb-context mt-1">Mark this lesson complete to track your curriculum progress.</div>
+            {% else %}
+            <div class="fw-semibold">Track your learning progress</div>
+            <div class="tb-context mt-1"><a href="{{ url_for('login') }}">Log in</a> or <a href="{{ url_for('register') }}">create an account</a> to mark lessons as completed.</div>
+            {% endif %}
+        </div>
+
+        {% if current_user.is_authenticated and not is_completed %}
+        <form method="post" action="{{ url_for('lesson_complete', slug=lesson.slug) }}" class="m-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-tb text-nowrap">
+                <i class="bi bi-check-lg me-1" aria-hidden="true"></i> Mark as completed
+            </button>
+        </form>
+        {% elif current_user.is_authenticated and is_completed %}
+        <form method="post" action="{{ url_for('lesson_complete', slug=lesson.slug) }}" class="m-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-tb-outline btn-sm text-nowrap" style="min-height: 40px;">
+                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Re-mark completed
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Navigation to Previous / Next Lessons -->
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-5" style="max-width: 70ch;">
+    {% if prev_lesson %}
+    <a href="{{ url_for('lesson_detail', slug=prev_lesson.slug) }}" class="btn-tb-outline text-decoration-none">
+        <i class="bi bi-chevron-left me-1" aria-hidden="true"></i> Prev: {{ prev_lesson.title }}
+    </a>
+    {% else %}
+    <div></div>
+    {% endif %}
+
+    {% if next_lesson %}
+    <a href="{{ url_for('lesson_detail', slug=next_lesson.slug) }}" class="btn-tb text-decoration-none">
+        Next: {{ next_lesson.title }} <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+    </a>
+    {% else %}
+    <a href="{{ url_for('learn') }}" class="btn-tb text-decoration-none">
+        Back to all lessons <i class="bi bi-check-all ms-1" aria-hidden="true"></i>
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
