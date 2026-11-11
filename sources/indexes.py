@@ -1,5 +1,6 @@
 """Database index management across application modules."""
 
+import modules.games as games
 import modules.imports as imports
 import modules.portfolios as portfolios
 import modules.prices as prices
@@ -18,6 +19,7 @@ def ensure_all_indexes(db):
     imports.ensure_indexes(db)
     screener.ensure_indexes(db)
     progress.ensure_indexes(db)
+    games.ensure_indexes(db)
 
 
 # Alias for callers expecting ensure_indexes

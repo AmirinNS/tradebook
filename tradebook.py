@@ -1,4 +1,5 @@
 # Standard library
+import secrets
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -14,6 +15,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_limiter import Limiter
@@ -27,6 +29,8 @@ from waitress import serve
 import modules.calendar as journal_calendar
 import modules.csv_import as csv_import
 import modules.fees as fees
+import modules.game_engine as game_engine
+import modules.games as games
 import modules.imports as imports
 import modules.indicators as indicators
 import modules.lessons as lessons
@@ -975,6 +979,118 @@ def lesson_complete(slug):
     return redirect(url_for("lesson_detail", slug=slug))
 
 
+def _get_game_owner():
+    """Return owner identifier: user:<id> for authenticated users, guest:<token> for guests."""
+    if current_user.is_authenticated:
+        return f"user:{current_user.get_id()}"
+    token = session.get("guest_token")
+    if not token:
+        token = secrets.token_hex(16)
+        session["guest_token"] = token
+    return f"guest:{token}"
+
+
+@app.route("/play", methods=["GET", "POST"])
+def play():
+    owner = _get_game_owner()
+    if request.method == "POST":
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+            nickname = data.get("nickname", "").strip()
+        else:
+            nickname = request.form.get("nickname", "").strip()
+
+        if not (3 <= len(nickname) <= 20):
+            if request.is_json:
+                return jsonify({"error": "Nickname must be between 3 and 20 characters."}), 400
+            flash("Nickname must be between 3 and 20 characters.", "danger")
+            active_game = games.get_active_game_for_owner(db, owner)
+            return render_template("play/start.html", active_game=active_game, nickname=nickname)
+
+        session["nickname"] = nickname
+        game_id = games.create_game(db, owner=owner, nickname=nickname)
+        if request.is_json:
+            return jsonify({
+                "game_id": str(game_id),
+                "redirect": url_for("play_game", game_id=str(game_id)),
+            })
+        return redirect(url_for("play_game", game_id=str(game_id)))
+
+    active_game = games.get_active_game_for_owner(db, owner)
+    default_nickname = session.get("nickname", "")
+    if not default_nickname and current_user.is_authenticated:
+        default_nickname = current_user.email.split("@")[0][:20]
+    return render_template(
+        "play/start.html",
+        active_game=active_game,
+        nickname=default_nickname,
+    )
+
+
+@app.route("/play/<game_id>")
+def play_game(game_id):
+    owner = _get_game_owner()
+    game = games.get_game(db, game_id, owner=owner)
+    if not game:
+        abort(404)
+    public_view = game_engine.public_view(game["state"])
+    return render_template(
+        "play/game.html",
+        game=game,
+        public_view=public_view,
+        version=game.get("version", 1),
+    )
+
+
+@app.route("/api/play/<game_id>/action", methods=["POST"])
+@limiter.limit("120 per minute")
+def play_action(game_id):
+    owner = _get_game_owner()
+    if not request.is_json:
+        abort(400, description="JSON body required.")
+
+    payload = request.get_json(silent=True) or {}
+    if "action" in payload and isinstance(payload["action"], dict):
+        action = payload["action"]
+        version = payload.get("version", action.get("version"))
+    else:
+        action = {k: v for k, v in payload.items() if k != "version"}
+        version = payload.get("version")
+
+    if version is None:
+        abort(400, description="Version is required.")
+
+    try:
+        updated_doc, new_state = games.apply_game_action(
+            db, game_id, owner, action, expected_version=version
+        )
+    except games.GameNotFoundError:
+        abort(404, description="Game not found.")
+    except games.StaleVersionError as err:
+        abort(409, description=str(err))
+    except game_engine.GameError as err:
+        return jsonify({"error": str(err)}), 400
+
+    view = game_engine.public_view(new_state)
+    view["version"] = updated_doc["version"]
+    return jsonify(view)
+
+
+@app.route("/play/leaderboard")
+def play_leaderboard():
+    leaders = games.get_leaderboard(db, limit=20)
+    wants_json = (
+        request.path.startswith("/api/")
+        or (
+            request.headers.get("Accept") == "application/json"
+            and not request.accept_mimetypes.accept_html
+        )
+    )
+    if wants_json:
+        return jsonify({"leaderboard": leaders})
+    return render_template("play/leaderboard.html", leaderboard=leaders)
+
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "env": APP_ENV})
@@ -1004,6 +1120,8 @@ def sitemap_xml():
         SITE_URL + url_for("demo"),
         SITE_URL + url_for("screener"),
         SITE_URL + url_for("learn"),
+        SITE_URL + url_for("play"),
+        SITE_URL + url_for("play_leaderboard"),
     ]
     for item in lessons.list_lessons():
         urls.append(SITE_URL + url_for("lesson_detail", slug=item["slug"]))

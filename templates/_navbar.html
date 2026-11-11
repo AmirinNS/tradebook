@@ -18,6 +18,9 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.path.startswith('/learn') %}active{% endif %}" href="{{ url_for('learn') }}">Learn</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path.startswith('/play') %}active{% endif %}" href="{{ url_for('play') }}">Play</a>
+                </li>
                 {% if not current_user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.path.startswith('/demo') %}active{% endif %}" href="{{ url_for('demo') }}">Demo</a>

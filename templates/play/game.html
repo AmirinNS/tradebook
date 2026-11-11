@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Play the market · Day {{ public_view.day }} of 30 · tradebook{% endblock %}
+{% block meta_description %}30-day stock market tycoon simulation. Trade fictional companies and test your trading decisions.{% endblock %}
+
+{% block content %}
+<div id="gameApp" data-game-id="{{ game._id }}" data-version="{{ version }}" data-csrf="{{ csrf_token() }}">
+    <!-- Title & Status Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h3 m-0">Play the market</h1>
+            <div class="tb-context">Fictional simulation, not brokerage trading · Player: <span class="fw-medium">{{ game.nickname }}</span></div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="tb-head tb-num fs-5" aria-live="polite" id="dayLabel">
+                Day {{ "%02d"|format(public_view.day) }} / 30
+            </span>
+            <a href="{{ url_for('play_leaderboard') }}" class="btn-tb-outline btn-sm text-decoration-none">
+                <i class="bi bi-trophy me-1" aria-hidden="true"></i> Leaderboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert / Version Conflict banner -->
+    <div id="gameAlert" class="alert alert-danger d-none mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+        <span id="gameAlertMsg"></span>
+    </div>
+
+    <!-- Metric Strip (Direction A) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="tb-panel tb-panel-body h-100">
+                <div class="tb-metric-label">Cash</div>
+                <div class="tb-metric tb-num" id="cashMetric">MYR {{ "{:,.2f}".format(public_view.cash|float) }}</div>
+                <div class="tb-context">Includes loan</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="tb-panel tb-panel-body h-100">
+                <div class="tb-metric-label">Loan principal</div>
+                <div class="tb-metric tb-num" id="principalMetric">MYR {{ "{:,.2f}".format(public_view.principal|float) }}</div>
+                <div class="tb-context">0.5% per day</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="tb-panel tb-panel-body h-100">
+                <div class="tb-metric-label">Accrued interest</div>
+                <div class="tb-metric tb-num" id="interestMetric">MYR {{ "{:,.2f}".format(public_view.interest|float) }}</div>
+                <div class="tb-context">Charged on Next day</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="tb-panel tb-panel-body h-100">
+                <div class="tb-metric-label">Net worth</div>
+                <div class="tb-metric tb-num" id="netWorthMetric">MYR {{ "{:,.2f}".format(public_view.net_worth|float) }}</div>
+                <div class="tb-context">Cash + holdings − debt</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day 30 End Screen Panel (hidden until finished) -->
+    <div id="endScreen" class="tb-panel tb-panel-body text-center py-4 px-3 mb-4 {% if not public_view.finished %}d-none{% endif %}">
+        <div class="d-inline-flex align-items-center justify-content-center p-3 mb-2 rounded-circle bg-success-subtle text-success">
+            <i class="bi bi-trophy-fill fs-2" aria-hidden="true"></i>
+        </div>
+        <h2 class="h4 mb-1">Simulation finished</h2>
+        <p class="tb-muted mb-3">Congratulations on completing all 30 days! Your trading score has been recorded.</p>
+        <div class="mb-3">
+            <div class="tb-metric-label">Final score (Net worth)</div>
+            <div class="tb-metric-big tb-num tb-pos my-1" id="finalScoreVal">
+                MYR {{ "{:,.2f}".format(public_view.score|float) if public_view.score else "{:,.2f}".format(public_view.net_worth|float) }}
+            </div>
+            <div class="tb-context">Final cash plus liquidated portfolio minus any outstanding obligations</div>
+        </div>
+        <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
+            <a href="{{ url_for('play_leaderboard') }}" class="btn-tb text-decoration-none">
+                <i class="bi bi-trophy me-1" aria-hidden="true"></i> View on leaderboard
+            </a>
+            <a href="{{ url_for('play') }}" class="btn-tb-outline text-decoration-none">
+                <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i> Play again
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Game Board & Actions -->
+    <div class="row g-4">
+        <!-- Market Board & Holdings & News (col-lg-8) -->
+        <div class="col-lg-8">
+            <div class="tb-panel mb-4">
+                <div class="tb-panel-head">
+                    <h2 class="h6 m-0 tb-head">Market board</h2>
+                    <span class="tb-context">Six fictional companies · prices in MYR</span>
+                </div>
+                <div class="table-responsive" role="region" aria-label="Market board" tabindex="0">
+                    <table class="tb-table">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Sector</th>
+                                <th class="r">Price</th>
+                                <th class="r">Change</th>
+                                <th class="r">Held</th>
+                            </tr>
+                        </thead>
+                        <tbody id="boardBody">
+                            <!-- Populated by game.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Holdings Panel -->
+            <div class="tb-panel mb-4">
+                <div class="tb-panel-head">
+                    <h2 class="h6 m-0 tb-head">Portfolio holdings</h2>
+                    <span class="tb-context" id="holdingsContext">Current inventory</span>
+                </div>
+                <div class="table-responsive" role="region" aria-label="Portfolio holdings" tabindex="0">
+                    <table class="tb-table" id="holdingsTable">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th class="r">Shares</th>
+                                <th class="r">Market price</th>
+                                <th class="r">Position value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdingsBody">
+                            <!-- Populated by game.js -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noHoldingsMsg" class="tb-panel-body tb-context text-center py-3 d-none">
+                    No shares held currently. Choose a company from the market board to buy.
+                </div>
+            </div>
+
+            <!-- News Ticker -->
+            <div class="tb-panel tb-panel-body tb-game-news" aria-live="polite" id="newsBox">
+                <div class="tb-metric-label">News</div>
+                <div id="newsText" class="fw-medium">
+                    {% if public_view.news %}
+                        Day {{ public_view.news[-1].day }}: {{ public_view.news[-1].headline }}
+                    {% else %}
+                        Day 1: Simulation begins. Prices move from tomorrow.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Side Rail (col-lg-4) -->
+        <div class="col-lg-4" id="actionControls">
+            <!-- Trade Panel -->
+            <div class="tb-panel tb-panel-body mb-4">
+                <h2 class="h6 tb-head mb-3">Trade shares</h2>
+                <form id="tradeForm">
+                    <div class="mb-3">
+                        <label class="form-label tb-context" for="tradeSymbol">Company</label>
+                        <select class="form-select" id="tradeSymbol" required>
+                            <!-- Populated by game.js -->
+                        </select>
+                    </div>
+                    <div class="btn-group w-100 mb-3" role="group" aria-label="Order side">
+                        <input type="radio" class="btn-check" name="side" id="sideBuy" value="buy" checked>
+                        <label class="btn btn-outline-secondary" for="sideBuy">Buy</label>
+                        <input type="radio" class="btn-check" name="side" id="sideSell" value="sell">
+                        <label class="btn btn-outline-secondary" for="sideSell">Sell</label>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label tb-context mb-0" for="tradeQty">Shares</label>
+                            <span class="tb-context" id="tradeMaxHint"></span>
+                        </div>
+                        <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            class="form-control tb-num"
+                            id="tradeQty"
+                            inputmode="numeric"
+                            value="100"
+                            required
+                        >
+                    </div>
+                    <div class="d-flex justify-content-between tb-context mb-3 pb-2 border-bottom">
+                        <span>Estimated total:</span>
+                        <span class="tb-num fw-semibold" id="tradeEstTotal">MYR 0.00</span>
+                    </div>
+                    <button type="submit" class="btn-tb-outline w-100" id="tradeSubmitBtn">
+                        Place order
+                    </button>
+                </form>
+            </div>
+
+            <!-- Repay Loan Panel -->
+            <div class="tb-panel tb-panel-body mb-4">
+                <h2 class="h6 tb-head mb-2">Repay margin loan</h2>
+                <p class="tb-context mb-3">
+                    Repayments settle accrued interest first, then principal.
+                </p>
+                <form id="repayForm">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label tb-context mb-0" for="repayAmount">Amount (MYR)</label>
+                            <span class="tb-context" id="debtTotalHint">Total debt: MYR 0.00</span>
+                        </div>
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                class="form-control tb-num"
+                                id="repayAmount"
+                                placeholder="0.00"
+                            >
+                            <button class="btn btn-outline-secondary" type="button" id="repayMaxBtn">Max</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-tb-outline w-100" id="repaySubmitBtn">
+                        Repay loan
+                    </button>
+                </form>
+            </div>
+
+            <!-- Primary Action: Next Day -->
+            <div class="tb-panel tb-panel-body" id="nextDayPanel">
+                <p class="tb-context mb-3">
+                    Next day charges 0.5% daily interest on outstanding principal and generates new prices.
+                </p>
+                <button class="btn-tb w-100" id="nextDayBtn">
+                    Next day <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="initialGameData" type="application/json">
+{{ public_view|tojson }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}

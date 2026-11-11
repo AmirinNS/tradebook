@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard · Tycoon simulation · tradebook{% endblock %}
+{% block meta_description %}Top 20 trading scores from the 30-day stock market tycoon simulation.{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+        <h1 class="h3 m-0">Tycoon leaderboard</h1>
+        <div class="tb-context">Top 20 finished scores · 30-day fictional market simulation</div>
+    </div>
+    <a href="{{ url_for('play') }}" class="btn-tb text-decoration-none">
+        <i class="bi bi-play-fill me-1" aria-hidden="true"></i> Play the game
+    </a>
+</div>
+
+<div class="tb-panel mb-4">
+    <div class="tb-panel-head">
+        <h2 class="h6 m-0 tb-head">Hall of fame</h2>
+        <span class="tb-context">Ranked by ending net worth in MYR</span>
+    </div>
+    {% if leaderboard %}
+    <div class="table-responsive" role="region" aria-label="Leaderboard table, scrolls horizontally" tabindex="0">
+        <table class="tb-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Rank</th>
+                    <th>Trader</th>
+                    <th class="r">Ending score</th>
+                    <th class="r">Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in leaderboard %}
+                <tr>
+                    <td class="fw-semibold">
+                        {% if item.rank == 1 %}
+                        <span class="text-warning"><i class="bi bi-trophy-fill me-1" aria-hidden="true"></i>#1</span>
+                        {% elif item.rank == 2 %}
+                        <span class="text-secondary"><i class="bi bi-award-fill me-1" aria-hidden="true"></i>#2</span>
+                        {% elif item.rank == 3 %}
+                        <span style="color: #cd7f32;"><i class="bi bi-award me-1" aria-hidden="true"></i>#3</span>
+                        {% else %}
+                        #{{ item.rank }}
+                        {% endif %}
+                    </td>
+                    <td class="fw-medium">{{ item.nickname }}</td>
+                    <td class="r tb-num fw-semibold tb-pos">
+                        MYR {{ "{:,.2f}".format(item.score|float) }}
+                    </td>
+                    <td class="r tb-date tb-muted">
+                        {% if item.finished_at %}
+                        {{ item.finished_at.strftime('%d %b %Y, %H:%M UTC') }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="tb-panel-body text-center py-5">
+        <i class="bi bi-trophy fs-1 tb-muted d-block mb-3" aria-hidden="true"></i>
+        <h3 class="h5 mb-2">No completed games yet</h3>
+        <p class="tb-muted mb-4">Complete all 30 days of the market simulation to place your nickname on the board.</p>
+        <a href="{{ url_for('play') }}" class="btn-tb text-decoration-none">
+            Start the first game
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

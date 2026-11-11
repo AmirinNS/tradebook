@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Play the market · tradebook{% endblock %}
+{% block meta_description %}30-day stock market tycoon simulation. Trade fictional companies, manage margin debt, and test your trading decisions.{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+        <h1 class="h3 m-0">Play the market</h1>
+        <div class="tb-context">Fictional simulation, not brokerage trading</div>
+    </div>
+    <a href="{{ url_for('play_leaderboard') }}" class="btn-tb-outline btn-sm text-decoration-none">
+        <i class="bi bi-trophy me-1" aria-hidden="true"></i> Leaderboard
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        {% if active_game %}
+        <div class="tb-panel p-3 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <strong class="d-block">Active simulation in progress</strong>
+                <span class="tb-context">Day {{ active_game.state.day }} of 30 · Nickname: {{ active_game.nickname }}</span>
+            </div>
+            <a href="{{ url_for('play_game', game_id=active_game._id) }}" class="btn-tb text-decoration-none">
+                Resume game <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="tb-panel mb-4">
+            <div class="tb-panel-head">
+                <h2 class="h6 m-0">Start a 30-day tycoon game</h2>
+                <span class="tb-context">MYR simulated balances</span>
+            </div>
+            <div class="tb-panel-body">
+                <p class="tb-context mb-3">
+                    You begin on Day 1 with <strong>RM10,000</strong> equity plus a <strong>RM10,000</strong> margin loan (RM20,000 starting cash).
+                    Each day, trade 6 fictional companies across diverse sectors.
+                    At every day advance, <strong>0.5% interest</strong> is charged on unpaid principal.
+                    Day 30 locks in your final score (net worth).
+                </p>
+
+                <form method="post" action="{{ url_for('play') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label tb-context fw-medium" for="nickname">Your nickname</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="nickname"
+                            name="nickname"
+                            value="{{ nickname }}"
+                            minlength="3"
+                            maxlength="20"
+                            required
+                            placeholder="e.g. BursaRider"
+                        >
+                        <div class="form-text tb-context">3 to 20 characters. Stored on the public leaderboard upon completion.</div>
+                    </div>
+                    <button type="submit" class="btn-tb w-100">
+                        Start simulation <i class="bi bi-play-fill ms-1" aria-hidden="true"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="tb-panel tb-panel-body">
+            <h3 class="h6 mb-2">Simulation rules</h3>
+            <ul class="tb-context mb-0 ps-3">
+                <li class="mb-1"><strong>Long only:</strong> You can only sell shares you currently hold.</li>
+                <li class="mb-1"><strong>Debt:</strong> Repayments satisfy accrued interest before reducing principal.</li>
+                <li class="mb-1"><strong>News shocks:</strong> Daily sector news shifts volatility and drift.</li>
+                <li><strong>Scoring:</strong> Cash + holdings value minus debt on Day 30.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

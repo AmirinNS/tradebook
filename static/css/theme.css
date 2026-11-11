@@ -477,3 +477,10 @@ textarea:focus-visible {
     color: var(--tb-muted);
 }
 
+/* ---------- Tycoon Game ---------- */
+.tb-game-news {
+    border-left: 3px solid var(--tb-accent);
+    padding-left: 12px;
+}
+
+
