@@ -155,7 +155,21 @@ def fmt_rate_filter(value):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    stock_universe = universe.get_universe()
+    market = [
+        {
+            "info": info,
+            "is_demo": universe.is_demo_symbol(info["symbol"]),
+            "bars": [prices._doc_to_bar(doc) for doc in
+                     db.price_bars.find({"symbol": info["symbol"]}).sort("date", -1).limit(2)],
+        }
+        for info in stock_universe if info["currency"] == "MYR"
+    ]
+    market = [stock for stock in market if stock["bars"]]
+    return render_template(
+        "index.html", market=market, universe_count=len(stock_universe),
+        lesson_count=len(lessons.list_lessons()),
+    )
 
 
 @app.route("/stocks")
